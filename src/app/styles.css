@@ -90,17 +90,30 @@ ul { padding: 0; list-style: none; }
   transform: translate3d(calc(var(--motion-x, 0px) * .84), calc(var(--motion-y, 0px) * .58), 0);
   transition: transform 560ms var(--glass-ease);
 }
-.home-drop::before {
+.home-drop::before,
+.home-drop::after {
   content: '';
   position: absolute;
   inset: 0;
   background: center / contain no-repeat url('../shared/media/water-drop.webp');
   transform: rotate(13deg);
-  animation: droplet-shimmer 8s ease-in-out infinite alternate;
 }
-@keyframes droplet-shimmer {
-  from { transform: translateY(0) rotate(13deg); filter: hue-rotate(-8deg); }
-  to { transform: translateY(-7px) rotate(17deg); filter: hue-rotate(18deg); }
+.home-drop::after { content: none; }
+@supports (mask-image: radial-gradient(#000, transparent)) {
+  .home-drop::after {
+    content: '';
+    mix-blend-mode: screen;
+    mask-image: radial-gradient(ellipse 27% 24% at center, #000, transparent 100%);
+    mask-repeat: no-repeat;
+    mask-size: 170% 170%;
+    animation: droplet-reflections 12s ease-in-out infinite alternate;
+  }
+}
+@keyframes droplet-reflections {
+  0% { mask-position: 90% 88%; opacity: .16; filter: hue-rotate(-9deg); }
+  32% { mask-position: 40% 96%; opacity: .42; filter: hue-rotate(6deg); }
+  68% { mask-position: 5% 32%; opacity: .27; filter: hue-rotate(19deg); }
+  100% { mask-position: 62% 3%; opacity: .39; filter: hue-rotate(-5deg); }
 }
 .home[data-motion='pointer'] .home-drop { transition: none; }
 .home[data-motion='wheel'] .home-drop { transition-duration: 140ms; }
@@ -333,7 +346,7 @@ ul { padding: 0; list-style: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-drop { --motion-x: 0px; --motion-y: 0px; transition: none; }
-  .home-drop::before { animation: none; }
+  .home-drop::after { content: none; }
   .home-links > button.hint { transition: none; }
 }
 
