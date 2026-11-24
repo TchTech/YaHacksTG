@@ -88,6 +88,30 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/Error'
+  /me/team-search:
+    put:
+      operationId: replaceTeamSearch
+      summary: Сохранить режим поиска команды
+      description: 'Значение null выключает режим. Для event сервер проверяет, что хакатон ещё идёт, и возвращает название из каталога. Для other можно указать произвольное название.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamSearchMode'
+      responses:
+        '200':
+          description: Сохранённый режим поиска команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamSearchMode'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
   /me/preferences:
     put:
       operationId: replacePreferences
@@ -115,6 +139,14 @@ paths:
     get:
       operationId: listRecommendedEvents
       summary: Получить рекомендованные события с учётом сохранённых настроек
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          description: 'Со scope=ongoing возвращает все хакатоны, идущие на текущую дату UTC, включая даты начала и окончания. Без scope действуют настройки рекомендаций.'
+          schema:
+            type: string
+            enum: [ongoing]
       responses:
         '200':
           description: Список событий, который может быть пустым
@@ -287,6 +319,31 @@ components:
           properties:
             preferences:
               $ref: '#/components/schemas/Preferences'
+            teamSearch:
+              $ref: '#/components/schemas/TeamSearchMode'
+    TeamSearchMode:
+      oneOf:
+        - type: 'null'
+        - type: object
+          required: [kind, eventId, eventTitle]
+          properties:
+            kind:
+              const: event
+            eventId:
+              type: string
+              minLength: 1
+            eventTitle:
+              type: string
+              minLength: 1
+              description: Название события для отображения в профиле после его окончания.
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              const: other
+            title:
+              type: string
+              maxLength: 120
     Hackathon:
       type: object
       required: [id, title, startsOn, endsOn, location, tags]

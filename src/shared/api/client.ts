@@ -38,7 +38,9 @@ function createHttpApi(base: string, initData: string): Api {
   return {
     profile: () => authenticated('/me'),
     saveProfile: value => authenticated('/me', { method: 'PUT', body: JSON.stringify(value) }),
+    saveTeamSearch: mode => authenticated('/me/team-search', { method: 'PUT', body: JSON.stringify(mode) }),
     events: () => authenticated('/events'),
+    ongoingEvents: () => authenticated('/events?scope=ongoing'),
     people: eventId => authenticated(`/people${eventQuery(eventId)}`),
     invite: (id, eventId) => authenticated(`/people/${encodeURIComponent(id)}/invitation${eventQuery(eventId)}`, { method: 'PUT' }),
     savePreferences: value => authenticated('/me/preferences', {

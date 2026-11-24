@@ -1,6 +1,6 @@
 import { configureStore, createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from 'react-redux'
-import type { Api, Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
+import type { Api, Hackathon, OwnProfile, Person, Preferences, Profile, TeamSearch } from '../shared/api/types'
 
 export type Resource<T> =
   | { status: 'idle' }
@@ -9,7 +9,7 @@ export type Resource<T> =
   | { status: 'ready'; value: T }
 
 type ProfileState = { profile: Resource<OwnProfile>; saving: boolean }
-type CalendarState = { events: Resource<Hackathon[]> }
+type CalendarState = { events: Resource<Hackathon[]>; ongoing: Resource<Hackathon[]> }
 type PeopleScope = { people: Resource<Person[]>; inviting: boolean; inviteError: string; invited: string[] }
 type PeopleState = Record<string, PeopleScope | undefined>
 type RootState = { profile: ProfileState; calendar: CalendarState; people: PeopleState }
@@ -21,6 +21,7 @@ const scopeKey = (eventId?: string) => eventId === undefined ? 'general' : `even
 export const selectProfile = (state: RootState) => state.profile.profile
 export const selectSaving = (state: RootState) => state.profile.saving
 export const selectEvents = (state: RootState) => state.calendar.events
+export const selectOngoingEvents = (state: RootState) => state.calendar.ongoing
 export const selectPeople = (state: RootState, eventId?: string) => state.people[scopeKey(eventId)] ?? emptyScope
 
 export function requestMessage(error: unknown) {
@@ -39,6 +40,10 @@ export const saveProfile = thunk('profile/saveDetails', async (value: Profile, {
   try { return await extra.saveProfile(value) } catch (error) { return rejectWithValue(requestMessage(error)) }
 }, { condition: (_, { getState }) => selectProfile(getState()).status === 'ready' && !selectSaving(getState()) })
 
+export const saveTeamSearch = thunk('profile/saveTeamSearch', async (mode: TeamSearch | null, { extra, rejectWithValue }) => {
+  try { return await extra.saveTeamSearch(mode) } catch (error) { return rejectWithValue(requestMessage(error)) }
+}, { condition: (_, { getState }) => selectProfile(getState()).status === 'ready' && !selectSaving(getState()) })
+
 export const savePreferences = thunk('profile/save', async (value: Preferences, { extra, rejectWithValue }) => {
   try { return await extra.savePreferences(value) } catch (error) { return rejectWithValue(requestMessage(error)) }
 }, { condition: (_, { getState }) => !selectSaving(getState()) })
@@ -46,6 +51,10 @@ export const savePreferences = thunk('profile/save', async (value: Preferences, 
 export const loadEvents = thunk('calendar/load', async (_, { extra, rejectWithValue }) => {
   try { return await extra.events() } catch (error) { return rejectWithValue(requestMessage(error)) }
 }, { condition: (_, { getState }) => selectEvents(getState()).status !== 'loading' })
+
+export const loadOngoingEvents = thunk('calendar/loadOngoing', async (_, { extra, rejectWithValue }) => {
+  try { return await extra.ongoingEvents() } catch (error) { return rejectWithValue(requestMessage(error)) }
+}, { condition: (_, { getState }) => selectOngoingEvents(getState()).status !== 'loading' })
 
 export const loadPeople = thunk('people/load', async (eventId: string | undefined, { extra, rejectWithValue }) => {
   try { return await extra.people(eventId) } catch (error) { return rejectWithValue(requestMessage(error)) }
@@ -72,18 +81,23 @@ const profileSlice = createSlice({
     .addCase(saveProfile.fulfilled, (state, action) => {
       state.saving = false
       if (state.profile.status === 'ready') {
-        state.profile.value = { ...action.payload, preferences: state.profile.value.preferences }
+        const { preferences, teamSearch } = state.profile.value
+        state.profile.value = { ...action.payload, preferences, ...(teamSearch === undefined ? {} : { teamSearch }) }
       }
+    })
+    .addCase(saveTeamSearch.fulfilled, (state, action) => {
+      state.saving = false
+      if (state.profile.status === 'ready') state.profile.value.teamSearch = action.payload
     })
     .addCase(savePreferences.fulfilled, (state, action) => {
       state.saving = false
       if (state.profile.status === 'ready') state.profile.value.preferences = action.payload
     })
-    .addMatcher(isAnyOf(saveProfile.pending, savePreferences.pending), state => { state.saving = true })
-    .addMatcher(isAnyOf(saveProfile.rejected, savePreferences.rejected), state => { state.saving = false }),
+    .addMatcher(isAnyOf(saveProfile.pending, savePreferences.pending, saveTeamSearch.pending), state => { state.saving = true })
+    .addMatcher(isAnyOf(saveProfile.rejected, savePreferences.rejected, saveTeamSearch.rejected), state => { state.saving = false }),
 })
 
-const initialCalendar: CalendarState = { events: idle }
+const initialCalendar: CalendarState = { events: idle, ongoing: idle }
 const calendarSlice = createSlice({
   name: 'calendar',
   initialState: initialCalendar,
@@ -100,6 +114,9 @@ const calendarSlice = createSlice({
         state.events = { status: 'error', message: requestMessage(action.payload) }
       }
     })
+    .addCase(loadOngoingEvents.pending, (state, action) => { state.ongoing = { status: 'loading', requestId: action.meta.requestId } })
+    .addCase(loadOngoingEvents.fulfilled, (state, action) => { state.ongoing = { status: 'ready', value: action.payload } })
+    .addCase(loadOngoingEvents.rejected, (state, action) => { state.ongoing = { status: 'error', message: requestMessage(action.payload) } })
     .addCase(savePreferences.fulfilled, state => { state.events = idle }),
 })
 

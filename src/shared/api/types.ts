@@ -20,7 +20,11 @@ export type Profile = {
 }
 
 export type Person = Profile & { id: string }
-export type OwnProfile = Profile & { preferences: Preferences }
+export type TeamSearch =
+  | { kind: 'event'; eventId: string; eventTitle: string }
+  | { kind: 'other'; title?: string }
+
+export type OwnProfile = Profile & { preferences: Preferences; teamSearch?: TeamSearch | null }
 
 export type Hackathon = {
   id: string
@@ -38,7 +42,9 @@ export type Hackathon = {
 export interface Api {
   profile(): Promise<OwnProfile>
   saveProfile(profile: Profile): Promise<Profile>
+  saveTeamSearch(mode: TeamSearch | null): Promise<TeamSearch | null>
   events(): Promise<Hackathon[]>
+  ongoingEvents(): Promise<Hackathon[]>
   people(eventId?: string): Promise<Person[]>
   invite(personId: string, eventId?: string): Promise<void>
   savePreferences(preferences: Preferences): Promise<Preferences>

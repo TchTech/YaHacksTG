@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { Back, Calendar, Detail, Header, Own, PeopleHeader, PersonCard } from '../features/screens'
-import type { Hackathon, OwnProfile } from '../shared/api/types'
+import { TeamSearchPanel } from '../features/TeamSearchPanel'
+import type { Hackathon, OwnProfile, TeamSearch } from '../shared/api/types'
 import {
-  clearInviteError, invitePerson, loadEvents, loadPeople, loadProfile, requestMessage, savePreferences, saveProfile,
-  selectEvents, selectPeople, selectSaving, useAppDispatch, useAppSelector, type Resource,
+  clearInviteError, invitePerson, loadEvents, loadOngoingEvents, loadPeople, loadProfile, requestMessage, savePreferences, saveProfile, saveTeamSearch,
+  selectEvents, selectOngoingEvents, selectPeople, selectSaving, useAppDispatch, useAppSelector, type Resource,
 } from './store'
 
 export function Loading({ state, retry }: { state: Resource<unknown>; retry: () => void }) {
@@ -87,10 +88,22 @@ export function PeoplePage({ event, back, fromCalendar, openPerson, notify }: {
     }} busy={inviting} error={inviteError} /></>
 }
 
+function TeamSearchSection({ mode }: { mode: TeamSearch | null }) {
+  const dispatch = useAppDispatch()
+  const events = useAppSelector(selectOngoingEvents)
+  const saving = useAppSelector(selectSaving)
+  const load = useCallback(() => { void dispatch(loadOngoingEvents()) }, [dispatch])
+  return <TeamSearchPanel mode={mode} options={events.status === 'ready' ? events.value : undefined}
+    loadError={events.status === 'error' ? events.message : undefined} load={load} saving={saving} save={async value => {
+      try { return await dispatch(saveTeamSearch(value)).unwrap() }
+      catch (error) { throw new Error(requestMessage(error)) }
+    }} />
+}
+
 export function SettingsPage({ profile, back }: { profile: OwnProfile; back: () => void }) {
   const dispatch = useAppDispatch()
   const saving = useAppSelector(selectSaving)
-  return <Own profile={profile} back={back} saving={saving} save={async value => {
+  return <Own profile={profile} back={back} saving={saving} teamSearch={<TeamSearchSection mode={profile.teamSearch ?? null} />} save={async value => {
     try { return await dispatch(savePreferences(value)).unwrap() }
     catch (error) { throw new Error(requestMessage(error)) }
   }} saveProfile={async value => {

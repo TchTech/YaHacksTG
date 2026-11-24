@@ -234,8 +234,8 @@ export function Detail({ person, back }: { person: Person; back: () => void }) {
   </>
 }
 
-export function Own({ profile, back, saving, save, saveProfile }: {
-  profile: OwnProfile; back: () => void; saving: boolean
+export function Own({ profile, back, saving, teamSearch, save, saveProfile }: {
+  profile: OwnProfile; back: () => void; saving: boolean; teamSearch: ReactNode
   save: (value: Preferences) => Promise<Preferences>; saveProfile: (value: Profile) => Promise<Profile>
 }) {
   const [draft, setDraft] = useState(profile.preferences)
@@ -279,6 +279,7 @@ export function Own({ profile, back, saving, save, saveProfile }: {
           setEditing(true)
         }}>Редактировать профиль</button>
         {profileStatus && <p className="accent profile-save-status" role="status">{profileStatus}</p>}
+        {teamSearch}
         <Skills profile={profile} />
         {profile.summary && <section className="profile-section own-profile-description"><h2>Краткое описание</h2><p className="lead">{profile.summary}</p></section>}
         {profile.about && <section className="profile-section own-profile-description"><h2>О себе</h2><p className="lead">{profile.about}</p></section>}

@@ -3,7 +3,7 @@ import aiWeekend from '../media/events/ai-weekend.webp'
 import studentDataCup from '../media/events/student-data-cup.webp'
 import mlChallenge from '../media/events/ml-challenge.webp'
 import productHack from '../media/events/product-hack.webp'
-import type { Api, Hackathon, Person, Preferences, Profile } from './types'
+import type { Api, Hackathon, Person, Preferences, Profile, TeamSearch } from './types'
 
 const defaultPreferences: Preferences = { role: 'ML Engineer', format: 'any', reminderDays: 2 }
 const basePerson: Person = {
@@ -34,24 +34,30 @@ const people: Person[] = [
   },
 ]
 
+function demoDates(startOffset: number, endOffset: number) {
+  const today = new Date()
+  const date = (offset: number) => new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + offset)).toISOString().slice(0, 10)
+  return { startsOn: date(startOffset), endsOn: date(endOffset) }
+}
+
 const events: Hackathon[] = [
   {
-    id: 'ai-weekend', title: 'AI Weekend', startsOn: '2026-10-24', endsOn: '2026-10-26', location: 'Онлайн',
+    id: 'ai-weekend', title: 'AI Weekend', ...demoDates(-2, 1), location: 'Онлайн',
     tags: ['AI Agents', 'ML'], previewUrl: aiWeekend, prizePool: '500 000 ₽',
     description: 'Соберите AI-агента для конкретной пользовательской задачи. За выходные нужно создать прототип, проверить его на нескольких сценариях и показать жюри, где агент экономит время или улучшает результат.',
   },
   {
-    id: 'data-cup', title: 'Student Data Cup', startsOn: '2026-10-28', endsOn: '2026-10-30', location: 'Москва',
+    id: 'data-cup', title: 'Student Data Cup', ...demoDates(-1, 2), location: 'Москва',
     tags: ['Data Science'], previewUrl: studentDataCup, prizePool: '300 000 ₽',
     description: 'Разберите набор данных, сформулируйте гипотезу и соберите модель для решения кейса. На защите команды покажут метрики и объяснят, как использовать результат на практике.',
   },
   {
-    id: 'ml-challenge', title: 'ML Challenge', startsOn: '2026-11-08', endsOn: '2026-11-10', location: 'Онлайн',
+    id: 'ml-challenge', title: 'ML Challenge', ...demoDates(15, 17), location: 'Онлайн',
     tags: ['Машинное обучение'], previewUrl: mlChallenge, prizePool: '750 000 ₽',
     description: 'Постройте воспроизводимый пайплайн машинного обучения и улучшите базовую модель. Финальные решения сравнят по качеству на отложенной выборке и по скорости работы.',
   },
   {
-    id: 'product-hack', title: 'Product Hack', startsOn: '2026-11-15', endsOn: '2026-11-16', location: 'Санкт-Петербург',
+    id: 'product-hack', title: 'Product Hack', ...demoDates(22, 23), location: 'Санкт-Петербург',
     tags: ['ML', 'Продукт'], previewUrl: productHack, prizePool: '400 000 ₽',
     description: 'Выберите проблему из предложенных кейсов, проверьте идею и соберите интерактивный прототип. На финальной презентации покажите сценарий пользователя и объясните, как измерить ценность продукта.',
   },
@@ -65,6 +71,20 @@ const candidatesByEvent = new Map<string, string[]>([
 ])
 const peopleById = new Map(people.map(person => [person.id, person]))
 const profileStorageKey = 'yahacks-demo-profile'
+const teamSearchStorageKey = 'yahacks-demo-team-search'
+
+function readTeamSearch(): TeamSearch | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(teamSearchStorageKey) ?? 'null')
+    if (value?.kind === 'event' && typeof value.eventId === 'string' && typeof value.eventTitle === 'string') {
+      return { kind: 'event', eventId: value.eventId, eventTitle: value.eventTitle }
+    }
+    if (value?.kind === 'other' && (value.title === undefined || typeof value.title === 'string')) {
+      return { kind: 'other', title: value.title }
+    }
+  } catch { /* Storage may be unavailable in a preview WebView. */ }
+  return null
+}
 
 function isProfile(value: unknown): value is Profile {
   if (!value || typeof value !== 'object') return false
@@ -100,6 +120,7 @@ function readPreferences(): Preferences {
 export function createDemoApi(): Api {
   let preferences = readPreferences()
   let ownProfile = readProfile()
+  let teamSearch = readTeamSearch()
   const invitedByEvent = new Map<string | undefined, Set<string>>()
   return {
     async profile() {
@@ -108,16 +129,25 @@ export function createDemoApi(): Api {
         skills: ['ML', 'AI Agents', 'Python'], summary: '', about: '',
         teams: ['Data Team'], achievements: basePerson.achievements, projects: basePerson.projects,
       }
-      return { ...fields, preferences }
+      return { ...fields, preferences, ...(teamSearch ? { teamSearch } : {}) }
     },
     async saveProfile(value) {
       ownProfile = value
       try { localStorage.setItem(profileStorageKey, JSON.stringify(value)) } catch { /* Keep the profile in memory. */ }
       return value
     },
+    async saveTeamSearch(value) {
+      teamSearch = value
+      try { localStorage.setItem(teamSearchStorageKey, JSON.stringify(value)) } catch { /* Keep the mode in memory. */ }
+      return value
+    },
     async events() {
       return events.filter(event => preferences.format === 'any'
         || (event.location === 'Онлайн') === (preferences.format === 'online'))
+    },
+    async ongoingEvents() {
+      const today = demoDates(0, 0).startsOn
+      return events.filter(event => event.startsOn <= today && today <= event.endsOn)
     },
     async people(eventId) {
       const invited = invitedByEvent.get(eventId)
