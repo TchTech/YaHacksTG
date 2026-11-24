@@ -1,0 +1,262 @@
+openapi: 3.1.0
+info:
+  title: YaHacks Mini App API
+  version: 0.1.0
+  description: Предлагаемый контракт между Telegram Mini App и сервером YaHacks.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+paths:
+  /auth/telegram:
+    post:
+      operationId: createTelegramSession
+      summary: Создать сессию Mini App
+      description: Сервер проверяет подпись initData и допустимый возраст auth_date по правилам Telegram.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [initData]
+              properties:
+                initData:
+                  type: string
+                  minLength: 1
+                  description: Исходная строка Telegram.WebApp.initData.
+      responses:
+        '200':
+          description: Сессия создана
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken]
+                properties:
+                  accessToken:
+                    type: string
+                    minLength: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /me:
+    get:
+      operationId: getProfile
+      summary: Получить свой профиль
+      responses:
+        '200':
+          description: Профиль пользователя и его настройки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /me/preferences:
+    put:
+      operationId: replacePreferences
+      summary: Сохранить настройки рекомендаций
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        '200':
+          description: Сохранённые настройки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /events:
+    get:
+      operationId: listRecommendedEvents
+      summary: Получить рекомендованные события с учётом сохранённых настроек
+      responses:
+        '200':
+          description: Список событий, который может быть пустым
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hackathon'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /people:
+    get:
+      operationId: listRecommendedPeople
+      summary: Получить подборку участников
+      responses:
+        '200':
+          description: Рекомендации в порядке приоритета, без ранее приглашённых участников
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Person'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /people/{personId}/invitation:
+    put:
+      operationId: invitePerson
+      summary: Отправить запрос в команду
+      description: Повтор запроса для той же пары пользователей возвращает 204 и сохраняет одно приглашение.
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '204':
+          description: Запрос принят
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Участник не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    BadRequest:
+      description: Данные запроса не прошли валидацию
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Учётные данные отсутствуют, недействительны или просрочены
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error:
+      description: Запрос завершился ошибкой
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    Preferences:
+      type: object
+      required: [role, format, reminderDays]
+      properties:
+        role:
+          type: string
+          minLength: 1
+          maxLength: 80
+        format:
+          type: string
+          enum: [online, in-person, any]
+        reminderDays:
+          type: integer
+          enum: [0, 1, 2, 7]
+          description: Число дней до дедлайна, ноль выключает напоминания.
+    TextList:
+      type: array
+      items:
+        type: string
+    Profile:
+      type: object
+      required: [name, role, status, skills, summary, about, teams, achievements, projects]
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+          minimum: 0
+        city:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        role:
+          type: string
+        status:
+          type: string
+        skills:
+          $ref: '#/components/schemas/TextList'
+        summary:
+          type: string
+        about:
+          type: string
+        teams:
+          $ref: '#/components/schemas/TextList'
+        achievements:
+          $ref: '#/components/schemas/TextList'
+        projects:
+          $ref: '#/components/schemas/TextList'
+    Person:
+      allOf:
+        - $ref: '#/components/schemas/Profile'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              minLength: 1
+    OwnProfile:
+      allOf:
+        - $ref: '#/components/schemas/Profile'
+        - type: object
+          required: [preferences]
+          properties:
+            preferences:
+              $ref: '#/components/schemas/Preferences'
+    Hackathon:
+      type: object
+      required: [id, title, startsOn, endsOn, location, tags]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        startsOn:
+          type: string
+          format: date
+        endsOn:
+          type: string
+          format: date
+          description: Дата окончания, равна дате начала или позже.
+        location:
+          type: string
+        tags:
+          $ref: '#/components/schemas/TextList'
+

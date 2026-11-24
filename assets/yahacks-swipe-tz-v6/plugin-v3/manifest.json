@@ -1,0 +1,14 @@
+{
+    "name":  "YaHacks v3 — Modern Mini App",
+    "networkAccess":  {
+                          "allowedDomains":  [
+                                                 "none"
+                                             ]
+                      },
+    "documentAccess":  "dynamic-page",
+    "editorType":  [
+                       "figma"
+                   ],
+    "api":  "1.0.0",
+    "main":  "code.js"
+}

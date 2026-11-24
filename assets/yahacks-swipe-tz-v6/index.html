@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="YaHacks помогает найти хакатон, людей и команду — прямо в Telegram."
+    />
+    <title>YaHacks — твой следующий хакатон</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">К содержанию</a>
+
+    <header class="site-header">
+      <a class="brand" href="#main" aria-label="YaHacks — на главную">
+        <span>Ya</span><span>Hacks</span>
+      </a>
+      <a class="header-link telegram-link" href="https://t.me/YaHacksBot?startapp" target="_blank" rel="noopener">
+        Открыть mini app
+      </a>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="welcome">Всё для следующего хакатона — в одном свайпе</p>
+          <h1 id="hero-title">Найди событие.<br />Собери команду.</h1>
+          <p class="lead">
+            YaHacks подбирает хакатоны и участников под твои навыки,
+            интересы и роль — прямо в Telegram.
+          </p>
+
+          <a class="cta telegram-link" href="https://t.me/YaHacksBot?startapp" target="_blank" rel="noopener">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
+              <path d="M21.8 3.3 18.6 20c-.2 1.2-.9 1.5-1.9.9l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9-8.1c.4-.4-.1-.6-.6-.3L6 13.7 1.2 12.2c-1-.3-1-1 .2-1.5L20 3.5c.9-.3 1.7.2 1.8-.2Z" fill="currentColor"/>
+            </svg>
+            Открыть mini app
+          </a>
+          <p class="cta-note">Откроется в Telegram. Ничего скачивать не нужно.</p>
+
+          <ul class="features" aria-label="Возможности YaHacks">
+            <li><span aria-hidden="true">↕</span> События под твой профиль</li>
+            <li><span aria-hidden="true">↔</span> Люди для сильной команды</li>
+            <li><span aria-hidden="true">●</span> Портфолио и достижения</li>
+          </ul>
+        </div>
+
+        <div class="product-stage" aria-label="Интерфейс YaHacks в Telegram">
+          <a
+            class="screen-fan telegram-link"
+            href="https://t.me/YaHacksBot?startapp"
+            target="_blank"
+            rel="noopener"
+            aria-label="Открыть YaHacks Mini App в Telegram"
+          >
+            <div class="screen-shot shot-home" role="img" aria-label="Главная YaHacks"></div>
+            <div class="screen-shot shot-events" role="img" aria-label="События YaHacks"></div>
+            <div class="screen-shot shot-people" role="img" aria-label="Подбор людей в команду"></div>
+            <div class="screen-shot shot-profile" role="img" aria-label="Профиль участника"></div>
+            <div class="screen-shot shot-settings" role="img" aria-label="Настройки профиля"></div>
+          </a>
+        </div>
+      </section>
+
+      <section class="capabilities" aria-labelledby="capabilities-title">
+        <header class="capabilities-head">
+          <h2 id="capabilities-title">Всё, чтобы дойти до финала не в одиночку</h2>
+          <p>Три действия вместо десятков чатов, таблиц и случайных знакомств.</p>
+        </header>
+
+        <div class="capabilities-grid">
+          <article class="capability capability-events">
+            <div class="capability-copy">
+              <span class="capability-symbol" aria-hidden="true">◆</span>
+              <h3>Выбирай подходящие события</h3>
+              <p>
+                Смотри хакатоны по своей роли, формату и интересам. Даты,
+                направления и место — сразу в карточке.
+              </p>
+              <div class="filter-demo" aria-hidden="true">
+                <span class="active">Все</span><span>Онлайн</span><span>Рядом</span>
+              </div>
+            </div>
+            <div class="feature-preview preview-events" role="img" aria-label="Экран со списком событий YaHacks"></div>
+          </article>
+
+          <article class="capability capability-team">
+            <div class="feature-preview preview-team" role="img" aria-label="Экран подбора участника команды"></div>
+            <div class="capability-copy">
+              <span class="capability-symbol people-symbol" aria-hidden="true">↔</span>
+              <h3>Собирай команду свайпами</h3>
+              <p>
+                Сравнивай навыки, проекты и цели участника. Подходит — отправляй приглашение.
+              </p>
+              <div class="decision-demo" aria-hidden="true">
+                <span>×</span><strong>Пригласить</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="capability capability-profile">
+            <div class="capability-copy">
+              <span class="capability-symbol" aria-hidden="true">●</span>
+              <h3>Покажи, что умеешь</h3>
+              <p>
+                Один профиль для навыков, проектов и достижений. Команда видит главное до первого сообщения.
+              </p>
+              <dl class="profile-stats" aria-label="Содержимое профиля">
+                <div><dt>Проекты</dt><dd>3</dd></div>
+                <div><dt>Достижения</dt><dd>2</dd></div>
+                <div><dt>Статус</dt><dd>Ищу команду</dd></div>
+              </dl>
+            </div>
+            <div class="feature-preview preview-profile" role="img" aria-label="Профиль участника YaHacks"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>YaHacks <span aria-hidden="true">×</span> Telegram Mini App</p>
+      <p>Для тех, кто не хочет хакатонить в одиночку.</p>
+    </footer>
+  </body>
+</html>

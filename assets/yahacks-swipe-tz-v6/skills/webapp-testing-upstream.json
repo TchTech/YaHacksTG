@@ -1,0 +1,66 @@
+[
+  {
+    "name": "LICENSE.txt",
+    "path": "skills/webapp-testing/LICENSE.txt",
+    "sha": "4f881c52d1f72f4cfb720e339e2d35c3058d01a9",
+    "size": 11345,
+    "url": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/LICENSE.txt?ref=main",
+    "html_url": "https://github.com/anthropics/skills/blob/main/skills/webapp-testing/LICENSE.txt",
+    "git_url": "https://api.github.com/repos/anthropics/skills/git/blobs/4f881c52d1f72f4cfb720e339e2d35c3058d01a9",
+    "download_url": "https://raw.githubusercontent.com/anthropics/skills/main/skills/webapp-testing/LICENSE.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/LICENSE.txt?ref=main",
+      "git": "https://api.github.com/repos/anthropics/skills/git/blobs/4f881c52d1f72f4cfb720e339e2d35c3058d01a9",
+      "html": "https://github.com/anthropics/skills/blob/main/skills/webapp-testing/LICENSE.txt"
+    }
+  },
+  {
+    "name": "SKILL.md",
+    "path": "skills/webapp-testing/SKILL.md",
+    "sha": "4726215301db64a0cc4d41fc3219c61f37a30f4a",
+    "size": 3913,
+    "url": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/SKILL.md?ref=main",
+    "html_url": "https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md",
+    "git_url": "https://api.github.com/repos/anthropics/skills/git/blobs/4726215301db64a0cc4d41fc3219c61f37a30f4a",
+    "download_url": "https://raw.githubusercontent.com/anthropics/skills/main/skills/webapp-testing/SKILL.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/SKILL.md?ref=main",
+      "git": "https://api.github.com/repos/anthropics/skills/git/blobs/4726215301db64a0cc4d41fc3219c61f37a30f4a",
+      "html": "https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md"
+    }
+  },
+  {
+    "name": "examples",
+    "path": "skills/webapp-testing/examples",
+    "sha": "d18b45eccd4e8cafe1cc7b3e060e5aa811f76689",
+    "size": 0,
+    "url": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/examples?ref=main",
+    "html_url": "https://github.com/anthropics/skills/tree/main/skills/webapp-testing/examples",
+    "git_url": "https://api.github.com/repos/anthropics/skills/git/trees/d18b45eccd4e8cafe1cc7b3e060e5aa811f76689",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/examples?ref=main",
+      "git": "https://api.github.com/repos/anthropics/skills/git/trees/d18b45eccd4e8cafe1cc7b3e060e5aa811f76689",
+      "html": "https://github.com/anthropics/skills/tree/main/skills/webapp-testing/examples"
+    }
+  },
+  {
+    "name": "scripts",
+    "path": "skills/webapp-testing/scripts",
+    "sha": "7266adeb444f007795fd860b01572e6e4379fdfc",
+    "size": 0,
+    "url": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/scripts?ref=main",
+    "html_url": "https://github.com/anthropics/skills/tree/main/skills/webapp-testing/scripts",
+    "git_url": "https://api.github.com/repos/anthropics/skills/git/trees/7266adeb444f007795fd860b01572e6e4379fdfc",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/anthropics/skills/contents/skills/webapp-testing/scripts?ref=main",
+      "git": "https://api.github.com/repos/anthropics/skills/git/trees/7266adeb444f007795fd860b01572e6e4379fdfc",
+      "html": "https://github.com/anthropics/skills/tree/main/skills/webapp-testing/scripts"
+    }
+  }
+]
