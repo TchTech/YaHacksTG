@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Hackathon, TeamSearch } from '../shared/api/types'
+import { HackathonPicker } from './HackathonPicker'
 
 type Draft = { enabled: boolean; selection: string; title: string }
 const eventOption = (id: string) => `event:${id}`
@@ -25,6 +26,8 @@ export function TeamSearchPanel({ mode, options, loadError, load, saving, save }
     (draft.selection !== saved.selection || (draft.selection === 'other' && title !== saved.title)))
   const chosen = options?.find(event => eventOption(event.id) === draft.selection)
   const previous = mode?.kind === 'event' && !options?.some(event => event.id === mode.eventId) ? mode : null
+  const choices = options?.map(event => ({ value: eventOption(event.id), label: event.title })) ?? []
+  const previousChoice = previous ? [{ value: eventOption(previous.eventId), label: `${previous.eventTitle} (ранее выбран)`, disabled: true }] : []
 
   useEffect(() => {
     if (draft.enabled) load()
@@ -63,13 +66,11 @@ export function TeamSearchPanel({ mode, options, loadError, load, saving, save }
         <span className="team-search-track" aria-hidden="true" />
       </label>
       {draft.enabled && <>
-        <label>Хакатон<select required value={draft.selection} onChange={event => edit({ selection: event.target.value })}>
-          <option value="" disabled>Выберите хакатон</option>
-          {options?.map(event => <option key={event.id} value={eventOption(event.id)}>{event.title}</option>)}
-          {previous && <option value={eventOption(previous.eventId)} disabled>{previous.eventTitle} (ранее выбран)</option>}
-          <option value="other">Другое</option>
-        </select></label>
-        {!options && !loadError && <p className="muted" role="status">Загружаем текущие хакатоны…</p>}
+        <HackathonPicker value={draft.selection} disabled={saving} onChange={selection => edit({ selection })}
+          options={[...choices, ...previousChoice, { value: 'other', label: 'Другое' }]} />
+        {!options && !loadError && <p className="muted hackathon-picker-loading" role="status">
+          <span aria-hidden="true" /> Загружаем текущие хакатоны…
+        </p>}
         {loadError && <div className="team-search-load-error">
           <p className="error" role="alert">{loadError}</p>
           <button className="hint" type="button" onClick={load}>Повторить загрузку</button>
