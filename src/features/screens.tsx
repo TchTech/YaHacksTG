@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
+import { Dropdown } from '../shared/ui/Dropdown'
 import { SwipeZone, type SwipeActions } from '../shared/ui/SwipeZone'
 import { WaterDrop } from './WaterDrop'
 import { ProfileEditor } from './ProfileEditor'
@@ -234,6 +235,19 @@ export function Detail({ person, back }: { person: Person; back: () => void }) {
   </>
 }
 
+const eventFormats = [
+  { value: 'online', label: 'Онлайн' },
+  { value: 'in-person', label: 'Очно' },
+  { value: 'any', label: 'Любой' },
+] as const
+
+const reminderOptions = [
+  { value: 0, label: 'Выключено' },
+  { value: 1, label: 'За 1 день' },
+  { value: 2, label: 'За 2 дня' },
+  { value: 7, label: 'За неделю' },
+] as const
+
 export function Own({ profile, back, saving, teamSearch, save, saveProfile }: {
   profile: OwnProfile; back: () => void; saving: boolean; teamSearch: ReactNode
   save: (value: Preferences) => Promise<Preferences>; saveProfile: (value: Profile) => Promise<Profile>
@@ -289,12 +303,10 @@ export function Own({ profile, back, saving, teamSearch, save, saveProfile }: {
         <h2>Настройки рекомендаций</h2>
         <fieldset disabled={saving}>
           <label>Роль<input required maxLength={80} value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value })} /></label>
-          <label>Формат событий<select value={draft.format} onChange={event => setDraft({ ...draft, format: event.target.value as Preferences['format'] })}>
-            <option value="online">Онлайн</option><option value="in-person">Очно</option><option value="any">Любой</option>
-          </select></label>
-          <label>Напоминать о дедлайнах<select value={draft.reminderDays} onChange={event => setDraft({ ...draft, reminderDays: Number(event.target.value) as Preferences['reminderDays'] })}>
-            <option value={0}>Выключено</option><option value={1}>За 1 день</option><option value={2}>За 2 дня</option><option value={7}>За неделю</option>
-          </select></label>
+          <Dropdown<Preferences['format']> label="Формат событий" options={eventFormats} value={draft.format} disabled={saving}
+            onChange={format => setDraft({ ...draft, format })} />
+          <Dropdown<Preferences['reminderDays']> label="Напоминать о дедлайнах" options={reminderOptions} value={draft.reminderDays} disabled={saving}
+            onChange={reminderDays => setDraft({ ...draft, reminderDays })} />
           <button className="primary" type="submit" disabled={!draft.role.trim()}>{saving ? 'Сохраняем…' : 'Сохранить'}</button>
         </fieldset>
         <p role="status" className="accent">{status}</p>

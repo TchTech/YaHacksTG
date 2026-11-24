@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 
-type Option = { value: string; label: string; disabled?: boolean }
+type Option<T> = { value: T; label: string; disabled?: boolean }
 
-export function HackathonPicker({ options, value, disabled, onChange }: {
-  options: Option[]; value: string; disabled: boolean; onChange: (value: string) => void
+export function Dropdown<T extends string | number>({ label, options, value, placeholder = 'Выберите вариант', disabled = false, onChange }: {
+  label: string; options: readonly Option<T>[]; value?: T; placeholder?: string; disabled?: boolean; onChange: (value: T) => void
 }) {
   const labelId = useId()
   const listId = useId()
@@ -11,7 +11,7 @@ export function HackathonPicker({ options, value, disabled, onChange }: {
   const button = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLUListElement>(null)
   const [open, setOpen] = useState(false)
-  const [active, setActive] = useState('')
+  const [active, setActive] = useState<T>()
   const selected = options.find(option => option.value === value)
   const enabled = options.filter(option => !option.disabled)
   const activeIndex = options.findIndex(option => !option.disabled && option.value === active)
@@ -19,11 +19,11 @@ export function HackathonPicker({ options, value, disabled, onChange }: {
 
   useEffect(() => {
     if (!open) return
-    function outside(event: PointerEvent) {
+    function outside(event: MouseEvent) {
       if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false)
     }
-    document.addEventListener('pointerdown', outside)
-    return () => document.removeEventListener('pointerdown', outside)
+    document.addEventListener('click', outside)
+    return () => document.removeEventListener('click', outside)
   }, [open])
 
   useEffect(() => { if (disabled) setOpen(false) }, [disabled])
@@ -40,11 +40,11 @@ export function HackathonPicker({ options, value, disabled, onChange }: {
 
   function show(last = false) {
     const initial = selected && !selected.disabled ? selected : enabled[last ? enabled.length - 1 : 0]
-    setActive(initial?.value ?? '')
+    setActive(initial?.value)
     setOpen(true)
   }
 
-  function choose(option: Option) {
+  function choose(option: Option<T>) {
     if (disabled || option.disabled) return
     onChange(option.value)
     setOpen(false)
@@ -61,14 +61,14 @@ export function HackathonPicker({ options, value, disabled, onChange }: {
           const index = enabled.findIndex(option => option.value === active)
           const next = index === -1 ? (direction === 1 ? 0 : enabled.length - 1)
             : Math.max(0, Math.min(enabled.length - 1, index + direction))
-          setActive(enabled[next]?.value ?? '')
+          setActive(enabled[next]?.value)
         }
         break
       }
       case 'Home':
       case 'End':
         setOpen(true)
-        setActive(enabled[event.key === 'Home' ? 0 : enabled.length - 1]?.value ?? '')
+        setActive(enabled[event.key === 'Home' ? 0 : enabled.length - 1]?.value)
         break
       case 'Enter':
       case ' ':
@@ -87,27 +87,24 @@ export function HackathonPicker({ options, value, disabled, onChange }: {
     event.preventDefault()
   }
 
-  return <div className="hackathon-picker" data-open={open} data-swipe-ignore ref={root}>
-    <span className="hackathon-picker-label" id={labelId}>Хакатон</span>
-    <button className="hackathon-picker-trigger" type="button" role="combobox" ref={button} disabled={disabled}
+  return <div className="dropdown" data-open={open} data-swipe-ignore ref={root}>
+    <span className="dropdown-label" id={labelId}>{label}</span>
+    <button className="dropdown-trigger" type="button" role="combobox" ref={button} disabled={disabled}
       aria-labelledby={labelId} aria-controls={listId} aria-expanded={open} aria-activedescendant={activeId} aria-required="true"
-      onClick={() => { if (open) setOpen(false); else show() }} onKeyDown={key}
-      onBlur={event => {
-        if (event.relatedTarget instanceof Node && !root.current?.contains(event.relatedTarget)) setOpen(false)
-      }}>
-      <span className={selected ? undefined : 'hackathon-picker-placeholder'}>{selected?.label ?? 'Выберите хакатон'}</span>
-      <span className="hackathon-picker-chevron" aria-hidden="true" />
+      onClick={() => { if (open) setOpen(false); else show() }} onKeyDown={key}>
+      <span className={selected ? undefined : 'dropdown-placeholder'}>{selected?.label ?? placeholder}</span>
+      <span className="dropdown-chevron" aria-hidden="true" />
     </button>
-    <div className="hackathon-picker-reveal" aria-hidden={!open} inert={!open}>
-      <div className="hackathon-picker-clip">
-        <ul className="hackathon-picker-options" id={listId} role="listbox" aria-labelledby={labelId} ref={list}
+    <div className="dropdown-reveal" aria-hidden={!open} inert={!open}>
+      <div className="dropdown-clip">
+        <ul className="dropdown-options" id={listId} role="listbox" aria-labelledby={labelId} ref={list}
           onMouseDown={event => event.preventDefault()}>
           {options.map((option, index) => <li key={option.value} id={`${listId}-${index}`} role="option"
             aria-selected={option.value === value} aria-disabled={option.disabled || undefined}
             data-active={index === activeIndex} onClick={() => choose(option)}
             onMouseMove={() => { if (!option.disabled) setActive(option.value) }}>
             <span>{option.label}</span>
-            {option.value === value && <span className="hackathon-picker-check" aria-hidden="true">✓</span>}
+            {option.value === value && <span className="dropdown-check" aria-hidden="true">✓</span>}
           </li>)}
         </ul>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Hackathon, TeamSearch } from '../shared/api/types'
-import { HackathonPicker } from './HackathonPicker'
+import { Dropdown } from '../shared/ui/Dropdown'
 
 type Draft = { enabled: boolean; selection: string; title: string }
 const eventOption = (id: string) => `event:${id}`
@@ -66,7 +66,7 @@ export function TeamSearchPanel({ mode, options, loadError, load, saving, save }
         <span className="team-search-track" aria-hidden="true" />
       </label>
       {draft.enabled && <>
-        <HackathonPicker value={draft.selection} disabled={saving} onChange={selection => edit({ selection })}
+        <Dropdown label="Хакатон" placeholder="Выберите хакатон" value={draft.selection || undefined} disabled={saving} onChange={selection => edit({ selection })}
           options={[...choices, ...previousChoice, { value: 'other', label: 'Другое' }]} />
         {!options && !loadError && <p className="muted hackathon-picker-loading" role="status">
           <span aria-hidden="true" /> Загружаем текущие хакатоны…
