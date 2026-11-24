@@ -1,5 +1,5 @@
 import { createDemoApi } from './demo'
-import type { Api, Preferences } from './types'
+import type { Api } from './types'
 
 function eventQuery(eventId?: string) {
   return eventId ? `?${new URLSearchParams({ eventId })}` : ''
@@ -37,10 +37,11 @@ function createHttpApi(base: string, initData: string): Api {
 
   return {
     profile: () => authenticated('/me'),
+    saveProfile: value => authenticated('/me', { method: 'PUT', body: JSON.stringify(value) }),
     events: () => authenticated('/events'),
     people: eventId => authenticated(`/people${eventQuery(eventId)}`),
     invite: (id, eventId) => authenticated(`/people/${encodeURIComponent(id)}/invitation${eventQuery(eventId)}`, { method: 'PUT' }),
-    savePreferences: (value: Preferences) => authenticated('/me/preferences', {
+    savePreferences: value => authenticated('/me/preferences', {
       method: 'PUT', body: JSON.stringify(value),
     }),
   }

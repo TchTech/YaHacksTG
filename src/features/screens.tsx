@@ -1,7 +1,8 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
 import { SwipeZone, type SwipeActions } from '../shared/ui/SwipeZone'
 import { WaterDrop } from './WaterDrop'
+import { ProfileEditor } from './ProfileEditor'
 
 export function Header({ title, children, actions = {} }: {
   title: string; children?: ReactNode; actions?: SwipeActions
@@ -165,10 +166,10 @@ export function EventDetail({ event, back, findTeam }: { event: Hackathon; back:
 }
 
 function Avatar({ profile, large = false }: { profile: Profile; large?: boolean }) {
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string>()
   return <div className={`avatar ${large ? 'avatar-large' : ''}`}>
-    {profile.avatarUrl && !failed
-      ? <img src={profile.avatarUrl} alt="" draggable={false} onError={() => setFailed(true)} />
+    {profile.avatarUrl && profile.avatarUrl !== failedUrl
+      ? <img src={profile.avatarUrl} alt="" draggable={false} onError={() => setFailedUrl(profile.avatarUrl)} />
       : <span aria-hidden="true">{profile.name.slice(0, 1).toUpperCase()}</span>}
   </div>
 }
@@ -233,18 +234,26 @@ export function Detail({ person, back }: { person: Person; back: () => void }) {
   </>
 }
 
-export function Own({ profile, back, save }: {
-  profile: OwnProfile; back: () => void; save: (value: Preferences) => Promise<Preferences>
+export function Own({ profile, back, saving, save, saveProfile }: {
+  profile: OwnProfile; back: () => void; saving: boolean
+  save: (value: Preferences) => Promise<Preferences>; saveProfile: (value: Profile) => Promise<Profile>
 }) {
   const [draft, setDraft] = useState(profile.preferences)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [profileStatus, setProfileStatus] = useState('')
+  const editButton = useRef<HTMLButtonElement>(null)
+
+  function finishEditing(saved: boolean) {
+    setEditing(false)
+    if (saved) setProfileStatus('Профиль сохранён')
+    requestAnimationFrame(() => editButton.current?.focus())
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (busy || !draft.role.trim()) return
-    setBusy(true)
+    if (saving || !draft.role.trim()) return
     setError('')
     setStatus('')
     try {
@@ -253,22 +262,31 @@ export function Own({ profile, back, save }: {
       setStatus('Настройки сохранены')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Не удалось сохранить настройки.')
-    } finally {
-      setBusy(false)
     }
   }
 
   return <SwipeZone className="own-screen" actions={{ right: back }}>
-    <ScreenHeading title="Профиль и настройки"><Back direction="→" onClick={back} /></ScreenHeading>
-    <div className="profile-layout">
+    <ScreenHeading title={editing ? 'Редактирование профиля' : 'Профиль и настройки'}><Back direction="→" onClick={back} /></ScreenHeading>
+    {editing ? <ProfileEditor profile={profile} saving={saving} save={saveProfile} finish={finishEditing} /> : <div className="profile-layout">
       <div className="profile-overview">
-        <div className="profile-head"><Avatar profile={profile} /><div><h2>{profile.name}</h2><p className="accent">{profile.role}</p><p className="muted">{profile.status}</p></div></div>
+        <div className="profile-head"><Avatar profile={profile} /><div>
+          <h2>{profile.name}{profile.age === undefined ? '' : `, ${profile.age}`}</h2>
+          {profile.role && <p className="accent">{profile.role}</p>}
+          {(profile.city || profile.status) && <p className="muted">{[profile.city, profile.status].filter(Boolean).join(' · ')}</p>}
+        </div></div>
+        <button className="primary profile-edit-trigger" type="button" ref={editButton} disabled={saving} onClick={() => {
+          setProfileStatus('')
+          setEditing(true)
+        }}>Редактировать профиль</button>
+        {profileStatus && <p className="accent profile-save-status" role="status">{profileStatus}</p>}
         <Skills profile={profile} />
+        {profile.summary && <section className="profile-section own-profile-description"><h2>Краткое описание</h2><p className="lead">{profile.summary}</p></section>}
+        {profile.about && <section className="profile-section own-profile-description"><h2>О себе</h2><p className="lead">{profile.about}</p></section>}
         <ProfileLists profile={profile} />
       </div>
       <form className="profile-section preferences" onSubmit={submit}>
         <h2>Настройки рекомендаций</h2>
-        <fieldset disabled={busy}>
+        <fieldset disabled={saving}>
           <label>Роль<input required maxLength={80} value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value })} /></label>
           <label>Формат событий<select value={draft.format} onChange={event => setDraft({ ...draft, format: event.target.value as Preferences['format'] })}>
             <option value="online">Онлайн</option><option value="in-person">Очно</option><option value="any">Любой</option>
@@ -276,11 +294,11 @@ export function Own({ profile, back, save }: {
           <label>Напоминать о дедлайнах<select value={draft.reminderDays} onChange={event => setDraft({ ...draft, reminderDays: Number(event.target.value) as Preferences['reminderDays'] })}>
             <option value={0}>Выключено</option><option value={1}>За 1 день</option><option value={2}>За 2 дня</option><option value={7}>За неделю</option>
           </select></label>
-          <button className="primary" type="submit" disabled={!draft.role.trim()}>{busy ? 'Сохраняем…' : 'Сохранить'}</button>
+          <button className="primary" type="submit" disabled={!draft.role.trim()}>{saving ? 'Сохраняем…' : 'Сохранить'}</button>
         </fieldset>
         <p role="status" className="accent">{status}</p>
         {error && <p role="alert" className="error">{error}</p>}
       </form>
-    </div>
+    </div>}
   </SwipeZone>
 }

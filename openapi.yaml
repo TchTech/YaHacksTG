@@ -59,6 +59,35 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/Error'
+    put:
+      operationId: replaceProfile
+      summary: Сохранить редактируемые поля своего профиля
+      description: Заменяет личные данные авторизованного пользователя. Отсутствующие необязательные поля очищаются. Настройки рекомендаций сохраняются отдельно.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Profile'
+                - type: object
+                  properties:
+                    name:
+                      type: string
+                      pattern: '\S'
+      responses:
+        '200':
+          description: Сохранённые поля профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
   /me/preferences:
     put:
       operationId: replacePreferences

@@ -66,6 +66,60 @@ describe('YaHacks MVP', () => {
     expect(localStorage.getItem('yahacks-demo-preferences')).toContain('QA Engineer')
   })
 
+  it('edits every personal field without changing recommendations, and restores them on reload', async () => {
+    localStorage.setItem('yahacks-demo-preferences', JSON.stringify({ role: 'ML Engineer', format: 'online', reminderDays: 2 }))
+    renderApp('/settings')
+    fireEvent.click(await screen.findByRole('button', { name: 'Редактировать профиль' }))
+    const form = within(screen.getByRole('form', { name: 'Редактирование профиля' }))
+    const fields = {
+      Имя: '  Мария  ', Возраст: '24', Город: 'Пермь', 'Роль в профиле': 'Продуктовый дизайнер', Статус: 'Ищу команду',
+      'Ссылка на фото': 'https://example.org/maria.jpg', 'Краткое описание': 'Разрабатываю интерфейсы', 'О себе': 'Люблю хакатоны',
+      Навыки: 'Figma\nTypeScript\n  Figma  ', Команды: 'Команда Wave', Достижения: 'Финалист AI Weekend', 'Кейсы и проекты': 'Дизайн навигатора',
+    }
+    for (const [label, value] of Object.entries(fields)) fireEvent.change(form.getByLabelText(label), { target: { value } })
+    fireEvent.click(form.getByRole('button', { name: 'Сохранить профиль' }))
+    expect(await screen.findByText('Профиль сохранён')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Мария, 24' })).toBeTruthy()
+    expect(screen.getByText('Люблю хакатоны')).toBeTruthy()
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Роль' }).value).toBe('ML Engineer')
+    expect(await createDemoApi().profile()).toEqual({
+      name: 'Мария', age: 24, city: 'Пермь', role: 'Продуктовый дизайнер', status: 'Ищу команду', avatarUrl: 'https://example.org/maria.jpg',
+      summary: 'Разрабатываю интерфейсы', about: 'Люблю хакатоны', skills: ['Figma', 'TypeScript'], teams: ['Команда Wave'],
+      achievements: ['Финалист AI Weekend'], projects: ['Дизайн навигатора'], preferences: { role: 'ML Engineer', format: 'online', reminderDays: 2 },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'На главную' }))
+    expect(await screen.findByText('Привет, Мария')).toBeTruthy()
+  })
+
+  it('retains the profile draft when validation or saving fails and discards it on cancel', async () => {
+    const api = createDemoApi()
+    const save = vi.spyOn(api, 'saveProfile').mockRejectedValueOnce(new Error('Не удалось сохранить профиль'))
+    renderApp('/settings', api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Редактировать профиль' }))
+    const name = screen.getByLabelText<HTMLInputElement>('Имя')
+    const photo = screen.getByLabelText<HTMLInputElement>('Ссылка на фото')
+    const submit = screen.getByRole('button', { name: 'Сохранить профиль' })
+    fireEvent.change(name, { target: { value: '   ' } })
+    fireEvent.click(submit)
+    expect((await screen.findByRole('alert')).textContent).toBe('Введите имя.')
+    fireEvent.change(name, { target: { value: 'Мария' } })
+    fireEvent.change(photo, { target: { value: 'ftp://example.org/photo' } })
+    fireEvent.click(submit)
+    expect((await screen.findByRole('alert')).textContent).toContain('Укажите ссылку на фото')
+    expect(save).not.toHaveBeenCalled()
+    fireEvent.change(photo, { target: { value: '' } })
+    fireEvent.click(submit)
+    expect(await screen.findByText('Не удалось сохранить профиль')).toBeTruthy()
+    expect(name.value).toBe('Мария')
+    fireEvent.click(submit)
+    expect(await screen.findByText('Профиль сохранён')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Редактировать профиль' }))
+    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'Черновик' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }))
+    expect(screen.getByRole('heading', { name: 'Мария' })).toBeTruthy()
+    expect(save).toHaveBeenCalledTimes(2)
+  })
+
   it('shows loading, an error, a retry and an empty calendar', async () => {
     const api = createDemoApi()
     vi.spyOn(api, 'events').mockRejectedValueOnce(new Error('Календарь сейчас недоступен')).mockResolvedValueOnce([])

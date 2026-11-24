@@ -1,6 +1,6 @@
-import { configureStore, createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { configureStore, createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from 'react-redux'
-import type { Api, Hackathon, OwnProfile, Person, Preferences } from '../shared/api/types'
+import type { Api, Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
 
 export type Resource<T> =
   | { status: 'idle' }
@@ -33,7 +33,11 @@ const thunk = createAsyncThunk.withTypes<{ state: RootState; extra: Api; rejectV
 
 export const loadProfile = thunk('profile/load', async (_, { extra, rejectWithValue }) => {
   try { return await extra.profile() } catch (error) { return rejectWithValue(requestMessage(error)) }
-}, { condition: (_, { getState }) => selectProfile(getState()).status !== 'loading' })
+}, { condition: (_, { getState }) => selectProfile(getState()).status !== 'loading' && !selectSaving(getState()) })
+
+export const saveProfile = thunk('profile/saveDetails', async (value: Profile, { extra, rejectWithValue }) => {
+  try { return await extra.saveProfile(value) } catch (error) { return rejectWithValue(requestMessage(error)) }
+}, { condition: (_, { getState }) => selectProfile(getState()).status === 'ready' && !selectSaving(getState()) })
 
 export const savePreferences = thunk('profile/save', async (value: Preferences, { extra, rejectWithValue }) => {
   try { return await extra.savePreferences(value) } catch (error) { return rejectWithValue(requestMessage(error)) }
@@ -65,12 +69,18 @@ const profileSlice = createSlice({
     .addCase(loadProfile.pending, (state, action) => { state.profile = { status: 'loading', requestId: action.meta.requestId } })
     .addCase(loadProfile.fulfilled, (state, action) => { state.profile = { status: 'ready', value: action.payload } })
     .addCase(loadProfile.rejected, (state, action) => { state.profile = { status: 'error', message: requestMessage(action.payload) } })
-    .addCase(savePreferences.pending, state => { state.saving = true })
+    .addCase(saveProfile.fulfilled, (state, action) => {
+      state.saving = false
+      if (state.profile.status === 'ready') {
+        state.profile.value = { ...action.payload, preferences: state.profile.value.preferences }
+      }
+    })
     .addCase(savePreferences.fulfilled, (state, action) => {
       state.saving = false
       if (state.profile.status === 'ready') state.profile.value.preferences = action.payload
     })
-    .addCase(savePreferences.rejected, state => { state.saving = false }),
+    .addMatcher(isAnyOf(saveProfile.pending, savePreferences.pending), state => { state.saving = true })
+    .addMatcher(isAnyOf(saveProfile.rejected, savePreferences.rejected), state => { state.saving = false }),
 })
 
 const initialCalendar: CalendarState = { events: idle }
@@ -139,7 +149,7 @@ const peopleSlice = createSlice({
       scope.inviting = false
       scope.inviteError = requestMessage(action.payload)
     })
-    .addCase(savePreferences.fulfilled, state => {
+    .addMatcher(isAnyOf(saveProfile.fulfilled, savePreferences.fulfilled), state => {
       for (const scope of Object.values(state)) if (scope) scope.people = idle
     }),
 })

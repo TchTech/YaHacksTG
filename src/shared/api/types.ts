@@ -37,6 +37,7 @@ export type Hackathon = {
 
 export interface Api {
   profile(): Promise<OwnProfile>
+  saveProfile(profile: Profile): Promise<Profile>
   events(): Promise<Hackathon[]>
   people(eventId?: string): Promise<Person[]>
   invite(personId: string, eventId?: string): Promise<void>

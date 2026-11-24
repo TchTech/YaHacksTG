@@ -3,7 +3,7 @@ import aiWeekend from '../media/events/ai-weekend.webp'
 import studentDataCup from '../media/events/student-data-cup.webp'
 import mlChallenge from '../media/events/ml-challenge.webp'
 import productHack from '../media/events/product-hack.webp'
-import type { Api, Hackathon, OwnProfile, Person, Preferences } from './types'
+import type { Api, Hackathon, Person, Preferences, Profile } from './types'
 
 const defaultPreferences: Preferences = { role: 'ML Engineer', format: 'any', reminderDays: 2 }
 const basePerson: Person = {
@@ -64,6 +64,27 @@ const candidatesByEvent = new Map<string, string[]>([
   ['product-hack', ['anton', 'misha']],
 ])
 const peopleById = new Map(people.map(person => [person.id, person]))
+const profileStorageKey = 'yahacks-demo-profile'
+
+function isProfile(value: unknown): value is Profile {
+  if (!value || typeof value !== 'object') return false
+  const fields = value as Record<string, unknown>
+  return typeof fields.name === 'string' && fields.name.trim().length > 0
+    && ['role', 'status', 'summary', 'about'].every(key => typeof fields[key] === 'string')
+    && ['city', 'avatarUrl'].every(key => fields[key] === undefined || typeof fields[key] === 'string')
+    && (fields.age === undefined || (typeof fields.age === 'number' && Number.isSafeInteger(fields.age) && fields.age >= 0))
+    && ['skills', 'teams', 'achievements', 'projects'].every(key => {
+      const list = fields[key]
+      return Array.isArray(list) && list.every(item => typeof item === 'string')
+    })
+}
+
+function readProfile(): Profile | undefined {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(profileStorageKey) ?? 'null')
+    if (isProfile(value)) return value
+  } catch { /* Storage may be unavailable in a preview WebView. */ }
+}
 
 function readPreferences(): Preferences {
   try {
@@ -78,15 +99,21 @@ function readPreferences(): Preferences {
 
 export function createDemoApi(): Api {
   let preferences = readPreferences()
+  let ownProfile = readProfile()
   const invitedByEvent = new Map<string | undefined, Set<string>>()
   return {
     async profile() {
-      const profile: OwnProfile = {
+      const fields = ownProfile ?? {
         name: 'Алекс', role: preferences.role, status: 'Открыт к приглашениям',
         skills: ['ML', 'AI Agents', 'Python'], summary: '', about: '',
-        teams: ['Data Team'], achievements: basePerson.achievements, projects: basePerson.projects, preferences,
+        teams: ['Data Team'], achievements: basePerson.achievements, projects: basePerson.projects,
       }
-      return profile
+      return { ...fields, preferences }
+    },
+    async saveProfile(value) {
+      ownProfile = value
+      try { localStorage.setItem(profileStorageKey, JSON.stringify(value)) } catch { /* Keep the profile in memory. */ }
+      return value
     },
     async events() {
       return events.filter(event => preferences.format === 'any'

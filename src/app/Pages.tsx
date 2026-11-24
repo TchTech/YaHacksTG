@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom'
 import { Back, Calendar, Detail, Header, Own, PeopleHeader, PersonCard } from '../features/screens'
 import type { Hackathon, OwnProfile } from '../shared/api/types'
 import {
-  clearInviteError, invitePerson, loadEvents, loadPeople, loadProfile, requestMessage, savePreferences,
-  selectEvents, selectPeople, useAppDispatch, useAppSelector, type Resource,
+  clearInviteError, invitePerson, loadEvents, loadPeople, loadProfile, requestMessage, savePreferences, saveProfile,
+  selectEvents, selectPeople, selectSaving, useAppDispatch, useAppSelector, type Resource,
 } from './store'
 
 export function Loading({ state, retry }: { state: Resource<unknown>; retry: () => void }) {
@@ -89,8 +89,12 @@ export function PeoplePage({ event, back, fromCalendar, openPerson, notify }: {
 
 export function SettingsPage({ profile, back }: { profile: OwnProfile; back: () => void }) {
   const dispatch = useAppDispatch()
-  return <Own profile={profile} back={back} save={async value => {
+  const saving = useAppSelector(selectSaving)
+  return <Own profile={profile} back={back} saving={saving} save={async value => {
     try { return await dispatch(savePreferences(value)).unwrap() }
+    catch (error) { throw new Error(requestMessage(error)) }
+  }} saveProfile={async value => {
+    try { return await dispatch(saveProfile(value)).unwrap() }
     catch (error) { throw new Error(requestMessage(error)) }
   }} />
 }
