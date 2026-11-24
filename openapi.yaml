@@ -103,9 +103,11 @@ paths:
     get:
       operationId: listRecommendedPeople
       summary: Получить подборку участников
+      parameters:
+        - $ref: '#/components/parameters/EventId'
       responses:
         '200':
-          description: Рекомендации в порядке приоритета, без ранее приглашённых участников
+          description: Рекомендации в порядке приоритета с учётом события. Приглашённые по этому событию или в общем подборе без eventId исключаются в рамках соответствующего подбора.
           content:
             application/json:
               schema:
@@ -114,13 +116,19 @@ paths:
                   $ref: '#/components/schemas/Person'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Запрошенное событие не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
   /people/{personId}/invitation:
     put:
       operationId: invitePerson
       summary: Отправить запрос в команду
-      description: Повтор запроса для той же пары пользователей возвращает 204 и сохраняет одно приглашение.
+      description: Повтор запроса для той же пары пользователей и того же события возвращает 204 и сохраняет одно приглашение. Без eventId сохраняется общее приглашение для пары.
       parameters:
         - name: personId
           in: path
@@ -128,13 +136,14 @@ paths:
           schema:
             type: string
             minLength: 1
+        - $ref: '#/components/parameters/EventId'
       responses:
         '204':
           description: Запрос принят
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Участник не найден
+          description: Участник или событие не найдены
           content:
             application/json:
               schema:
@@ -142,6 +151,15 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 components:
+  parameters:
+    EventId:
+      name: eventId
+      in: query
+      required: false
+      description: Идентификатор хакатона. Без параметра используется общий подбор.
+      schema:
+        type: string
+        minLength: 1
   securitySchemes:
     bearerAuth:
       type: http
@@ -259,4 +277,19 @@ components:
           type: string
         tags:
           $ref: '#/components/schemas/TextList'
+        previewUrl:
+          type: string
+          format: uri
+          description: URL прямоугольной обложки события.
+        prizePool:
+          type: string
+          description: Призовой фонд с валютой или описанием призов.
+        description:
+          type: string
+          description: Описание события для экрана подробностей.
+        eventUrl:
+          type: string
+          format: uri
+          pattern: '^https://'
+          description: HTTPS-ссылка на страницу события у организаторов.
 

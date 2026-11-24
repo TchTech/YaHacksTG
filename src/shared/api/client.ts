@@ -1,6 +1,10 @@
 import { createDemoApi } from './demo'
 import type { Api, Preferences } from './types'
 
+function eventQuery(eventId?: string) {
+  return eventId ? `?${new URLSearchParams({ eventId })}` : ''
+}
+
 function createHttpApi(base: string, initData: string): Api {
   let session: Promise<string> | undefined
   const root = base.replace(/\/+$/, '')
@@ -34,8 +38,8 @@ function createHttpApi(base: string, initData: string): Api {
   return {
     profile: () => authenticated('/me'),
     events: () => authenticated('/events'),
-    people: () => authenticated('/people'),
-    invite: id => authenticated(`/people/${encodeURIComponent(id)}/invitation`, { method: 'PUT' }),
+    people: eventId => authenticated(`/people${eventQuery(eventId)}`),
+    invite: (id, eventId) => authenticated(`/people/${encodeURIComponent(id)}/invitation${eventQuery(eventId)}`, { method: 'PUT' }),
     savePreferences: (value: Preferences) => authenticated('/me/preferences', {
       method: 'PUT', body: JSON.stringify(value),
     }),

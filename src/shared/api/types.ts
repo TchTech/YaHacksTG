@@ -29,12 +29,16 @@ export type Hackathon = {
   endsOn: string
   location: string
   tags: string[]
+  previewUrl?: string
+  prizePool?: string
+  description?: string
+  eventUrl?: string
 }
 
 export interface Api {
   profile(): Promise<OwnProfile>
   events(): Promise<Hackathon[]>
-  people(): Promise<Person[]>
-  invite(personId: string): Promise<void>
+  people(eventId?: string): Promise<Person[]>
+  invite(personId: string, eventId?: string): Promise<void>
   savePreferences(preferences: Preferences): Promise<Preferences>
 }
