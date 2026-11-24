@@ -34,7 +34,7 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     if (!event.isPrimary || event.button !== 0) return
     suppressClick.current = false
     const target = event.target as Element
-    if (target.closest('input, select, textarea, label, a')) return
+    if (target.closest('input, select, textarea, label, a, [data-swipe-ignore]')) return
     if (wheel.current) {
       window.clearTimeout(wheel.current.timer)
       wheel.current = null

@@ -90,31 +90,38 @@ ul { padding: 0; list-style: none; }
   transform: translate3d(calc(var(--motion-x, 0px) * .84), calc(var(--motion-y, 0px) * .58), 0);
   transition: transform 560ms var(--glass-ease);
 }
-.home-drop::before,
-.home-drop::after {
+.home-drop[data-renderer='fallback']::before {
   content: '';
   position: absolute;
   inset: 0;
   background: center / contain no-repeat url('../shared/media/water-drop.webp');
   transform: rotate(13deg);
 }
-.home-drop::after { content: none; }
-@supports (mask-image: radial-gradient(#000, transparent)) {
-  .home-drop::after {
-    content: '';
-    mix-blend-mode: screen;
-    mask-image: radial-gradient(ellipse 27% 24% at center, #000, transparent 100%);
-    mask-repeat: no-repeat;
-    mask-size: 170% 170%;
-    animation: droplet-reflections 12s ease-in-out infinite alternate;
-  }
+.home-drop canvas { display: block; width: 100%; height: 100%; visibility: hidden; }
+.home-drop[data-renderer='3d'] canvas { visibility: visible; }
+.drop-control {
+  position: absolute;
+  z-index: 1;
+  top: clamp(46px, 7dvh, 72px);
+  right: 7%;
+  width: min(60%, 250px);
+  height: clamp(92px, 17dvh, 147px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #e5edf7;
+  font-size: .73rem;
+  cursor: grab;
+  touch-action: none;
 }
-@keyframes droplet-reflections {
-  0% { mask-position: 90% 88%; opacity: .16; filter: hue-rotate(-9deg); }
-  32% { mask-position: 40% 96%; opacity: .42; filter: hue-rotate(6deg); }
-  68% { mask-position: 5% 32%; opacity: .27; filter: hue-rotate(19deg); }
-  100% { mask-position: 62% 3%; opacity: .39; filter: hue-rotate(-5deg); }
-}
+.drop-control:active { cursor: grabbing; }
+.drop-control > span { padding: .43rem .68rem; border: 1px solid #465161; border-radius: 9px; background: #080b12e6; }
+.drop-control > span span { color: var(--accent); }
+.drop-control:is(:hover, :focus-visible) > span { border-color: var(--accent); }
 .home[data-motion='pointer'] .home-drop { transition: none; }
 .home[data-motion='wheel'] .home-drop { transition-duration: 140ms; }
 .home-copy { flex: 1; display: flex; flex-direction: column; min-width: 0; padding-bottom: 44px; }
@@ -259,6 +266,7 @@ ul { padding: 0; list-style: none; }
     width: min(53%, calc(var(--height) * .91), 660px);
     transform: translate3d(calc(var(--motion-x, 0px) * .84), calc(-50% + var(--motion-y, 0px) * .58), 0);
   }
+  .drop-control { top: 50%; right: 4%; width: 43%; height: min(54dvh, 480px); transform: translateY(-50%); font-size: .82rem; }
   .home-copy {
     width: min(54%, 38rem);
     justify-content: center;
@@ -346,7 +354,6 @@ ul { padding: 0; list-style: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-drop { --motion-x: 0px; --motion-y: 0px; transition: none; }
-  .home-drop::after { content: none; }
   .home-links > button.hint { transition: none; }
 }
 

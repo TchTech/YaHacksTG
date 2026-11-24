@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import type { Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
 import { SwipeZone, type SwipeActions } from '../shared/ui/SwipeZone'
+import { WaterDrop } from './WaterDrop'
 
 export function Header({ title, children, actions = {} }: {
   title: string; children?: ReactNode; actions?: SwipeActions
@@ -47,9 +48,6 @@ export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
   return <SwipeZone className="home" actions={{ right: people, left: own, down: calendar }} trackMotion>
-    <div className="home-backdrop" aria-hidden="true">
-      <div className="home-drop" />
-    </div>
     <span className="wordmark">YaHacks<span>.</span></span>
     <div className="home-copy">
       <div className="home-intro">
@@ -87,6 +85,7 @@ export function Home({ profile, people, own, calendar }: {
         </nav>
       </div>
     </div>
+    <WaterDrop />
   </SwipeZone>
 }
 
