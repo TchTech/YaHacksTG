@@ -8,7 +8,6 @@ export function WaterDrop() {
   const [surface, setSurface] = useState<Surface>('loading')
   const target = useRef({ yaw: 0, pitch: 0 })
   const drag = useRef<{ id: number; x: number; y: number; yaw: number; pitch: number } | null>(null)
-  const dragged = useRef(false)
   const wake = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -99,28 +98,25 @@ export function WaterDrop() {
     wake.current()
   }
 
-  function begin(event: PointerEvent<HTMLButtonElement>) {
+  function begin(event: PointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.button !== 0) return
-    dragged.current = false
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, ...target.current }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
-  function move(event: PointerEvent<HTMLButtonElement>) {
+  function move(event: PointerEvent<HTMLDivElement>) {
     const gesture = drag.current
     if (gesture?.id !== event.pointerId) return
     const dx = event.clientX - gesture.x
     const dy = event.clientY - gesture.y
-    if (!dragged.current && Math.hypot(dx, dy) < 4) return
-    dragged.current = true
     turn(gesture.yaw + dx * .012, gesture.pitch + dy * .01)
   }
 
-  function end(event: PointerEvent<HTMLButtonElement>) {
+  function end(event: PointerEvent<HTMLDivElement>) {
     if (drag.current?.id === event.pointerId) drag.current = null
   }
 
-  function key(event: KeyboardEvent<HTMLButtonElement>) {
+  function key(event: KeyboardEvent<HTMLDivElement>) {
     const { yaw, pitch } = target.current
     switch (event.key) {
       case 'ArrowLeft': turn(yaw - .28, pitch); break
@@ -136,12 +132,9 @@ export function WaterDrop() {
     <div className="home-backdrop" aria-hidden="true">
       <div className="home-drop" data-renderer={surface}><canvas ref={canvas} /></div>
     </div>
-    {surface === '3d' && <button className="drop-control" type="button" data-swipe-ignore
+    {surface === '3d' && <div className="drop-control" role="group" tabIndex={0} data-swipe-ignore
+      aria-label="Трёхмерная капля" aria-description="Используйте стрелки, чтобы менять ракурс."
       onPointerDown={begin} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}
-      onKeyDown={key} onClick={event => {
-        if (event.detail === 0 || !dragged.current) turn(target.current.yaw + .55, target.current.pitch)
-      }}>
-      <span><span aria-hidden="true">⟳</span> Повернуть каплю</span>
-    </button>}
+      onKeyDown={key} />}
   </>
 }
