@@ -145,9 +145,17 @@ export function Calendar({ events, role, back, open, findTeam, openPlans }: {
   </>
 }
 
+function externalEventUrl(value?: string) {
+  if (!value) return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol === 'https:' && !url.username && !url.password) return url.href
+  } catch { return undefined }
+}
+
 export function EventDetail({ event, back, findTeam, plan }: { event: Hackathon; back: () => void; findTeam: () => void; plan: ReactNode }) {
-  const officialUrl = event.eventUrl?.startsWith('https://') ? event.eventUrl : undefined
-  const registrationUrl = event.registrationUrl?.startsWith('https://') ? event.registrationUrl : undefined
+  const officialUrl = externalEventUrl(event.eventUrl)
+  const registrationUrl = externalEventUrl(event.registrationUrl)
   return <>
     <Header title={event.title} actions={{ up: back }}><Back direction="↑" onClick={back} to="Назад" /></Header>
     <div className="event-detail">
@@ -162,8 +170,8 @@ export function EventDetail({ event, back, findTeam, plan }: { event: Hackathon;
         {plan}
         <div className="event-detail-actions">
           <button className="event-secondary" type="button" onClick={findTeam}>Найти команду</button>
-          {registrationUrl ? <a className="event-secondary" href={registrationUrl} target="_blank" rel="noreferrer">Перейти к регистрации</a>
-            : officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer">Сайт события</a>}
+          {officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer">Сайт хакатона <span aria-hidden="true">↗</span></a>}
+          {registrationUrl && registrationUrl !== officialUrl && <a className="event-secondary" href={registrationUrl} target="_blank" rel="noreferrer">Перейти к регистрации <span aria-hidden="true">↗</span></a>}
         </div>
         {!registrationUrl && !officialUrl && <p className="muted">Организатор пока не добавил ссылку на регистрацию.</p>}
       </div>

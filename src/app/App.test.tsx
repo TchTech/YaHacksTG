@@ -53,6 +53,19 @@ describe('YaHacks MVP', () => {
     expect(screen.getByTestId('pathname').textContent).toBe('/calendar/product-hack/team')
   })
 
+  it('shows the hackathon website alongside a separate registration link', async () => {
+    const api = createDemoApi()
+    const event = (await api.event('ai-weekend'))!
+    vi.spyOn(api, 'event').mockResolvedValue({
+      ...event, eventUrl: 'https://example.org/ai-weekend', registrationUrl: 'https://example.org/register',
+    })
+    renderApp('/calendar/ai-weekend', api)
+    const site = await screen.findByRole<HTMLAnchorElement>('link', { name: 'Сайт хакатона' })
+    expect(site.href).toBe('https://example.org/ai-weekend')
+    expect(site.target).toBe('_blank')
+    expect(screen.getByRole<HTMLAnchorElement>('link', { name: 'Перейти к регистрации' }).href).toBe('https://example.org/register')
+  })
+
   it('saves and removes plans, and opens a linked event regardless of calendar preferences', async () => {
     localStorage.setItem('yahacks-demo-preferences', JSON.stringify({ role: 'ML Engineer', format: 'online', reminderDays: 2 }))
     renderApp('/calendar/data-cup')
@@ -83,6 +96,7 @@ describe('YaHacks MVP', () => {
     fireEvent.click(outgoing.getByRole('button', { name: 'Посмотреть со стороны получателя' }))
     fireEvent.click(outgoing.getByRole('button', { name: 'Принять' }))
     expect(await outgoing.findByText('Принято')).toBeTruthy()
+    expect(document.querySelector('.invitation-confetti')).toBeNull()
     expect(outgoing.queryByRole('link', { name: 'Написать в Telegram' })).toBeNull()
     const incoming = within(screen.getByRole('heading', { name: 'Входящие' }).closest('section')!)
     fireEvent.click(incoming.getByRole('button', { name: 'Отклонить' }))
@@ -108,15 +122,21 @@ describe('YaHacks MVP', () => {
   })
 
   it('can retry a failed invitation reply without changing its status prematurely', async () => {
+    vi.mocked(window.matchMedia).mockReturnValue({ matches: false } as MediaQueryList)
     const api = createDemoApi()
     vi.spyOn(api, 'replyToInvitation').mockRejectedValueOnce(new Error('Связь прервалась'))
     renderApp('/invitations', api)
     fireEvent.click(await screen.findByRole('button', { name: 'Принять' }))
     expect((await screen.findByRole('alert')).textContent).toBe('Связь прервалась')
     expect(screen.getByText('Ожидает ответа')).toBeTruthy()
+    expect(document.querySelector('.invitation-confetti')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Принять' }))
     expect(await screen.findByText('Принято')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
+    const particle = document.querySelector('.invitation-confetti > span')
+    expect(particle).toBeTruthy()
+    fireEvent.animationEnd(particle!)
+    expect(document.querySelector('.invitation-confetti')).toBeNull()
   })
 
   it('validates and saves preferences in demo mode', async () => {

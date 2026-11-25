@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Back, Header } from '../features/screens'
 import type { Hackathon, Invitation, InvitationReply } from '../shared/api/types'
 import { Loading } from './Pages'
@@ -56,6 +56,19 @@ export function MyHackathonsPage({ back, calendar, open }: { back: () => void; c
 }
 
 const statusLabels = { pending: 'Ожидает ответа', accepted: 'Принято', declined: 'Отклонено' }
+const confettiColors = ['var(--accent)', '#fff0a5', '#ff9c4a', '#f9f7ef']
+const confettiPieces = Array.from({ length: 18 }, (_, index) => {
+  const angle = (-155 + index * 8) * Math.PI / 180
+  const distance = 38 + (index * 29) % 62
+  return {
+    '--flight-x': `${Math.round(Math.cos(angle) * distance)}px`,
+    '--flight-y': `${Math.round(Math.sin(angle) * distance)}px`,
+    '--spin': `${(index % 2 ? -1 : 1) * (145 + index * 31)}deg`,
+    '--confetti-color': confettiColors[index % confettiColors.length],
+  } as CSSProperties
+})
+
+type ConfettiOrigin = { id: string; x: number; y: number }
 
 export function InvitationsPage({ back, demo, openEvent }: {
   back: () => void; demo: boolean; openEvent: (id: string) => void
@@ -65,6 +78,7 @@ export function InvitationsPage({ back, demo, openEvent }: {
   const pending = useAppSelector(selectReplyPending)
   const [preview, setPreview] = useState<string>()
   const [error, setError] = useState('')
+  const [confetti, setConfetti] = useState<ConfettiOrigin>()
 
   useEffect(() => {
     void dispatch(loadInvitations())
@@ -73,13 +87,21 @@ export function InvitationsPage({ back, demo, openEvent }: {
     return () => window.removeEventListener('focus', refresh)
   }, [dispatch])
 
-  async function reply(invitation: Invitation, status: InvitationReply, asRecipient: boolean) {
+  async function reply(invitation: Invitation, status: InvitationReply, asRecipient: boolean, origin?: ConfettiOrigin) {
     setError('')
     try {
-      await dispatch(replyToInvitation({ id: invitation.id, status, preview: asRecipient })).unwrap()
+      const updated = await dispatch(replyToInvitation({ id: invitation.id, status, preview: asRecipient })).unwrap()
+      if (updated.status === 'accepted' && origin && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setConfetti(origin)
       if (asRecipient) setPreview(undefined)
     }
     catch (failure) { setError(requestMessage(failure)) }
+  }
+
+  function accept(invitation: Invitation, asRecipient: boolean, button: HTMLButtonElement) {
+    const card = button.closest('li')?.getBoundingClientRect()
+    const rect = button.getBoundingClientRect()
+    const origin = card && { id: invitation.id, x: rect.left + rect.width / 2 - card.left, y: rect.top + rect.height / 2 - card.top }
+    void reply(invitation, 'accepted', asRecipient, origin)
   }
 
   function card(invitation: Invitation) {
@@ -100,11 +122,16 @@ export function InvitationsPage({ back, demo, openEvent }: {
       </button>}
       {asRecipient && <p className="muted">Деморежим. Вы отвечаете от лица {person.name}.</p>}
       {canReply && <div className="event-detail-actions">
-        <button className="primary" type="button" disabled={pending !== null} onClick={() => { void reply(invitation, 'accepted', asRecipient) }}>Принять</button>
+        <button className="primary" type="button" disabled={pending !== null} onClick={event => accept(invitation, asRecipient, event.currentTarget)}>Принять</button>
         <button className="event-secondary" type="button" disabled={pending !== null} onClick={() => { void reply(invitation, 'declined', asRecipient) }}>Отклонить</button>
       </div>}
       {contact && <a className="event-secondary" href={contact} target="_blank" rel="noreferrer">Написать в Telegram</a>}
       {status === 'accepted' && !contact && <p className="muted">{demo ? 'В реальном режиме здесь появится контакт собеседника в Telegram.' : 'Собеседник не указал имя пользователя в Telegram.'}</p>}
+      {confetti?.id === id && <span className="invitation-confetti" aria-hidden="true"
+        style={{ '--burst-x': `${confetti.x}px`, '--burst-y': `${confetti.y}px` } as CSSProperties}
+        onAnimationEnd={() => setConfetti(current => current?.id === id ? undefined : current)}>
+        {confettiPieces.map((style, index) => <span key={index} style={style} />)}
+      </span>}
     </li>
   }
 

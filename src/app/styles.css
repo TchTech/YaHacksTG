@@ -205,7 +205,7 @@ ul { padding: 0; list-style: none; }
 .journey-card h2 { margin-bottom: .25rem; }
 .invitation-columns { display: grid; gap: 1rem; margin-top: 1.25rem; }
 .invitation-columns h2 { margin-bottom: .65rem; }
-.invitation-card { display: grid; gap: .55rem; justify-content: stretch; }
+.invitation-card { position: relative; display: grid; gap: .55rem; justify-content: stretch; }
 .invitation-card :is(button, a) { width: fit-content; }
 .invitation-card .hint { min-height: 44px; }
 .invitation-card .invitation-event { color: var(--accent); }
@@ -214,6 +214,22 @@ ul { padding: 0; list-style: none; }
 .invitation-status.accepted { color: #addec5; background: #152820; }
 .invitation-status.pending { color: var(--accent); background: #302812; }
 .invitation-error { margin-top: .65rem; }
+.invitation-confetti {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  clip-path: inset(-115px 0 -105px);
+}
+.invitation-confetti > span {
+  position: absolute; left: var(--burst-x); top: var(--burst-y);
+  width: 5px; height: 9px; border-radius: 1px; background: var(--confetti-color);
+  animation: invitation-burst 780ms ease-out both;
+}
+.invitation-confetti > span:nth-child(3n) { height: 5px; border-radius: 50%; }
+@keyframes invitation-burst {
+  0% { transform: translate(0, 0) scale(.35); opacity: 0; }
+  12% { opacity: 1; }
+  62% { transform: translate(var(--flight-x), var(--flight-y)) rotate(calc(var(--spin) * .65)); opacity: 1; }
+  100% { transform: translate(calc(var(--flight-x) * 1.17), calc(var(--flight-y) + 67px)) rotate(var(--spin)); opacity: 0; }
+}
 .people-event { margin-bottom: .65rem; }
 .people-event strong { color: #f5f5f7; }
 .details-hint { font-size: .8rem; }
@@ -436,5 +452,6 @@ ul { padding: 0; list-style: none; }
   .home-links > button.hint { transition: none; }
   :is(.dropdown-trigger, .dropdown-chevron, .dropdown-reveal) { transition: none; }
   .hackathon-picker-loading span { animation: none; }
+  .invitation-confetti { visibility: hidden; }
 }
 
