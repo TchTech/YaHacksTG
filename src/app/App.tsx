@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { EventDetail, Home } from '../features/screens'
 import { bindBackButton, getWebApp, setupWebApp } from '../shared/telegram/webApp'
 import { CalendarPage, EventRoute, PeoplePage, ProfileLoading, SettingsPage } from './Pages'
+import { EventPlan, InvitationsPage, MyHackathonsPage } from './JourneyPages'
 import { backPath, eventPath, routes, screenFor, teamPath } from './routes'
 import { loadProfile, selectProfile, useAppDispatch, useAppSelector } from './store'
 
@@ -26,6 +27,8 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
   const noticeTimer = useRef<number | undefined>(undefined)
 
   const open = (path: string) => navigate(path, { state: { backTo: pathname } satisfies RouteState })
+  const openPlans = () => open(routes.plans)
+  const openInvitations = () => open(routes.invitations)
   const back = useCallback(() => {
     const destination = backPath(pathname, origin)
     if (origin === destination) navigate(-1)
@@ -58,7 +61,7 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
   }, [pathname, screen])
 
   function notify() {
-    setNotice(demo ? 'Демо: запрос в команду отправлен' : 'Запрос в команду отправлен')
+    setNotice(demo ? 'Демо: запрос отправлен. Ответ появится в приглашениях.' : 'Запрос отправлен. Ответ появится в приглашениях.')
     window.clearTimeout(noticeTimer.current)
     noticeTimer.current = window.setTimeout(() => setNotice(''), 2600)
   }
@@ -70,16 +73,22 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
         <Route path={routes.home} element={<Home profile={profile.value}
           people={() => open(teamPath())} own={() => open(routes.settings)} calendar={() => open(routes.calendar)} />} />
         <Route path={routes.calendar} element={<CalendarPage role={profile.value.preferences.role} back={back}
-          open={event => open(eventPath(event.id))} findTeam={event => open(teamPath(event.id))} />} />
+          open={event => open(eventPath(event.id))} findTeam={event => open(teamPath(event.id))} openPlans={openPlans} />} />
         <Route path={routes.event} element={<EventRoute calendar={back}>
-          {event => <EventDetail event={event} back={back} findTeam={() => open(teamPath(event.id))} />}
+          {event => <EventDetail event={event} back={back} findTeam={() => open(teamPath(event.id))}
+            plan={<EventPlan key={event.id} event={event} openPlans={openPlans} />} />}
         </EventRoute>} />
         <Route path={routes.eventTeam} element={<EventRoute calendar={() => navigate(routes.calendar, { replace: true })}>
           {event => <PeoplePage key={event.id} event={event} back={back} fromCalendar={origin === routes.calendar}
-            openPerson={id => open(teamPath(event.id, id))} notify={notify} />}
+            openPerson={id => open(teamPath(event.id, id))} openInvitations={openInvitations} notify={notify} />}
         </EventRoute>} />
-        <Route path={routes.people} element={<PeoplePage back={back} openPerson={id => open(teamPath(undefined, id))} notify={notify} />} />
-        <Route path={routes.settings} element={<SettingsPage profile={profile.value} back={back} />} />
+        <Route path={routes.people} element={<PeoplePage back={back} openPerson={id => open(teamPath(undefined, id))} openInvitations={openInvitations} notify={notify} />} />
+        <Route path={routes.plans} element={<MyHackathonsPage back={back} calendar={() => open(routes.calendar)} open={event => open(eventPath(event.id))} />} />
+        <Route path={routes.invitations} element={<InvitationsPage back={back} demo={demo} openEvent={id => open(eventPath(id))} />} />
+        <Route path={routes.settings} element={<SettingsPage profile={profile.value} back={back} activity={<nav className="profile-activity" aria-label="Моя активность">
+          <button className="event-secondary" type="button" onClick={openPlans}>Мои хакатоны</button>
+          <button className="event-secondary" type="button" onClick={openInvitations}>Приглашения</button>
+        </nav>} />} />
         <Route path="*" element={<Navigate to={routes.home} replace />} />
       </Routes>}
     </div>

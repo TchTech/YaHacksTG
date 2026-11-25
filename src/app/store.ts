@@ -1,18 +1,16 @@
 import { configureStore, createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from 'react-redux'
 import type { Api, Hackathon, OwnProfile, Person, Preferences, Profile, TeamSearch } from '../shared/api/types'
+import { requestMessage, type Resource } from '../shared/api/resource'
+import { journeyReducer } from './journeyStore'
 
-export type Resource<T> =
-  | { status: 'idle' }
-  | { status: 'loading'; requestId: string }
-  | { status: 'error'; message: string }
-  | { status: 'ready'; value: T }
+export { requestMessage, type Resource } from '../shared/api/resource'
 
 type ProfileState = { profile: Resource<OwnProfile>; saving: boolean }
 type CalendarState = { events: Resource<Hackathon[]>; ongoing: Resource<Hackathon[]> }
 type PeopleScope = { people: Resource<Person[]>; inviting: boolean; inviteError: string; invited: string[] }
 type PeopleState = Record<string, PeopleScope | undefined>
-type RootState = { profile: ProfileState; calendar: CalendarState; people: PeopleState }
+type RootState = { profile: ProfileState; calendar: CalendarState; people: PeopleState; journey: ReturnType<typeof journeyReducer> }
 
 const idle = { status: 'idle' } as const
 const emptyScope: PeopleScope = { people: idle, inviting: false, inviteError: '', invited: [] }
@@ -23,12 +21,6 @@ export const selectSaving = (state: RootState) => state.profile.saving
 export const selectEvents = (state: RootState) => state.calendar.events
 export const selectOngoingEvents = (state: RootState) => state.calendar.ongoing
 export const selectPeople = (state: RootState, eventId?: string) => state.people[scopeKey(eventId)] ?? emptyScope
-
-export function requestMessage(error: unknown) {
-  if (typeof error === 'string') return error
-  return error instanceof Error && !(error instanceof TypeError)
-    ? error.message : 'Не удалось соединиться с сервером. Попробуйте ещё раз.'
-}
 
 const thunk = createAsyncThunk.withTypes<{ state: RootState; extra: Api; rejectValue: string }>()
 
@@ -175,7 +167,7 @@ export const { clearInviteError } = peopleSlice.actions
 
 export function createAppStore(api: Api) {
   return configureStore({
-    reducer: { profile: profileSlice.reducer, calendar: calendarSlice.reducer, people: peopleSlice.reducer },
+    reducer: { profile: profileSlice.reducer, calendar: calendarSlice.reducer, people: peopleSlice.reducer, journey: journeyReducer },
     middleware: getDefaultMiddleware => getDefaultMiddleware({ thunk: { extraArgument: api } }),
   })
 }

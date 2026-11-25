@@ -194,6 +194,26 @@ ul { padding: 0; list-style: none; }
 .event-description h2 { margin-bottom: .45rem; }
 .event-description .lead { white-space: pre-line; }
 .event-detail-actions { margin-top: .2rem; }
+.journey-shortcut { display: flex; width: fit-content; margin-block: .7rem .4rem; }
+.event-plan { display: grid; gap: .55rem; }
+.profile-activity { display: flex; flex-wrap: wrap; gap: .55rem; margin-block: .3rem .9rem; }
+.journey-list { display: grid; gap: .65rem; margin-block: 1rem; }
+.journey-card {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem;
+  padding: .9rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: #101010;
+}
+.journey-card h2 { margin-bottom: .25rem; }
+.invitation-columns { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.invitation-columns h2 { margin-bottom: .65rem; }
+.invitation-card { display: grid; gap: .55rem; justify-content: stretch; }
+.invitation-card :is(button, a) { width: fit-content; }
+.invitation-card .hint { min-height: 44px; }
+.invitation-card .invitation-event { color: var(--accent); }
+.invitation-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
+.invitation-status { border-radius: 6px; padding: .22rem .4rem; background: var(--surface); color: var(--muted); font-size: .78rem; }
+.invitation-status.accepted { color: #addec5; background: #152820; }
+.invitation-status.pending { color: var(--accent); background: #302812; }
+.invitation-error { margin-top: .65rem; }
 .people-event { margin-bottom: .65rem; }
 .people-event strong { color: #f5f5f7; }
 .details-hint { font-size: .8rem; }
@@ -377,6 +397,7 @@ ul { padding: 0; list-style: none; }
   .event-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
   .event-group .event-cover { max-height: 17rem; }
   .event-detail { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: start; gap: clamp(1.5rem, 4.5vw, 3.5rem); margin-top: 1.85rem; }
+  .invitation-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
   .event-description .lead { font-size: 1rem; }
   .details-hint { font-size: .9rem; }
   .person-card { display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); }

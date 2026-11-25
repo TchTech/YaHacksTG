@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Back, Calendar, Detail, Header, Own, PeopleHeader, PersonCard } from '../features/screens'
 import { TeamSearchPanel } from '../features/TeamSearchPanel'
 import type { Hackathon, OwnProfile, TeamSearch } from '../shared/api/types'
+import { loadEvent, loadPerson, selectEvent, selectPerson } from './journeyStore'
 import {
   clearInviteError, invitePerson, loadEvents, loadOngoingEvents, loadPeople, loadProfile, requestMessage, savePreferences, saveProfile, saveTeamSearch,
   selectEvents, selectOngoingEvents, selectPeople, selectSaving, useAppDispatch, useAppSelector, type Resource,
@@ -38,39 +39,45 @@ export function CalendarPage(props: Omit<Parameters<typeof Calendar>[0], 'events
 }
 
 export function EventRoute({ children, calendar }: { children: (event: Hackathon) => ReactNode; calendar: () => void }) {
-  const { eventId } = useParams()
-  const { events, retry } = useEvents()
-  const header = <Header title="Событие" actions={{ up: calendar }}><Back direction="↑" onClick={calendar} to="К календарю" /></Header>
-  if (events.status !== 'ready') return <>{header}<Loading state={events} retry={retry} /></>
-  const event = events.value.find(item => item.id === eventId)
-  if (!event) return <>{header}<p className="empty">Событие пока недоступно в вашем календаре.</p></>
-  return children(event)
+  const { eventId = '' } = useParams()
+  const dispatch = useAppDispatch()
+  const event = useAppSelector(state => selectEvent(state, eventId))
+  useEffect(() => {
+    if (event.status === 'idle') void dispatch(loadEvent(eventId))
+  }, [dispatch, eventId, event.status])
+  const header = <Header title="Событие" actions={{ up: calendar }}><Back direction="↑" onClick={calendar} to="Назад" /></Header>
+  if (event.status !== 'ready') return <>{header}<Loading state={event} retry={() => { void dispatch(loadEvent(eventId)) }} /></>
+  if (!event.value) return <>{header}<p className="empty">Событие недоступно.</p></>
+  return children(event.value)
 }
 
-export function PeoplePage({ event, back, fromCalendar, openPerson, notify }: {
-  event?: Hackathon; back: () => void; fromCalendar?: boolean; openPerson: (id: string) => void; notify: () => void
+export function PeoplePage({ event, back, fromCalendar, openPerson, openInvitations, notify }: {
+  event?: Hackathon; back: () => void; fromCalendar?: boolean; openPerson: (id: string) => void; openInvitations: () => void; notify: () => void
 }) {
   const { personId } = useParams()
   const eventId = event?.id
   const dispatch = useAppDispatch()
   const { people, inviting, inviteError } = useAppSelector(state => selectPeople(state, eventId))
+  const personDetail = useAppSelector(state => selectPerson(state, personId ?? ''))
   const [skipped, setSkipped] = useState<string[]>([])
   useEffect(() => {
-    if (people.status === 'idle') void dispatch(loadPeople(eventId))
-  }, [dispatch, eventId, people.status])
+    if (personId === undefined && people.status === 'idle') void dispatch(loadPeople(eventId))
+    if (personId !== undefined && personDetail.status === 'idle') void dispatch(loadPerson(personId))
+  }, [dispatch, eventId, people.status, personDetail.status, personId])
 
   function retry() {
     setSkipped([])
     void dispatch(loadPeople(eventId))
   }
 
-  const header = personId === undefined ? <PeopleHeader back={back} event={event} fromCalendar={fromCalendar} />
-    : <Header title="Профиль участника" actions={{ up: back }}><Back direction="↑" onClick={back} to="К карточке" /></Header>
-  if (people.status !== 'ready') return <>{header}<Loading state={people} retry={retry} /></>
   if (personId !== undefined) {
-    const person = people.value.find(candidate => candidate.id === personId)
-    return person ? <Detail person={person} back={back} /> : <>{header}<p className="empty">Участник пока недоступен в этой подборке.</p></>
+    const header = <Header title="Профиль участника" actions={{ up: back }}><Back direction="↑" onClick={back} to="К карточке" /></Header>
+    if (personDetail.status !== 'ready') return <>{header}<Loading state={personDetail} retry={() => { void dispatch(loadPerson(personId)) }} /></>
+    return personDetail.value ? <Detail person={personDetail.value} back={back} /> : <>{header}<p className="empty">Профиль участника недоступен.</p></>
   }
+  const header = <><PeopleHeader back={back} event={event} fromCalendar={fromCalendar} />
+    <button className="event-secondary journey-shortcut" type="button" onClick={openInvitations}>Приглашения</button></>
+  if (people.status !== 'ready') return <>{header}<Loading state={people} retry={retry} /></>
   const person = people.value.find(candidate => !skipped.includes(candidate.id))
   if (!person) return <>{header}<div className="empty"><p>{event ? 'Для этого события пока нет новых рекомендаций.' : 'Новых рекомендаций пока нет.'}</p>
     <button type="button" className="primary" onClick={retry}>Обновить подбор</button>
@@ -100,10 +107,10 @@ function TeamSearchSection({ mode }: { mode: TeamSearch | null }) {
     }} />
 }
 
-export function SettingsPage({ profile, back }: { profile: OwnProfile; back: () => void }) {
+export function SettingsPage({ profile, back, activity }: { profile: OwnProfile; back: () => void; activity: ReactNode }) {
   const dispatch = useAppDispatch()
   const saving = useAppSelector(selectSaving)
-  return <Own profile={profile} back={back} saving={saving} teamSearch={<TeamSearchSection mode={profile.teamSearch ?? null} />} save={async value => {
+  return <Own profile={profile} back={back} saving={saving} activity={activity} teamSearch={<TeamSearchSection mode={profile.teamSearch ?? null} />} save={async value => {
     try { return await dispatch(savePreferences(value)).unwrap() }
     catch (error) { throw new Error(requestMessage(error)) }
   }} saveProfile={async value => {

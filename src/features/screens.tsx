@@ -30,7 +30,7 @@ export function Hint({ children, onClick, className = '' }: {
 }
 
 export function Back({ direction, onClick, to = 'На главную' }: {
-  direction: '←' | '↑' | '→'; onClick: () => void; to?: 'На главную' | 'К карточке' | 'К событию' | 'К календарю'
+  direction: '←' | '↑' | '→'; onClick: () => void; to?: 'На главную' | 'К карточке' | 'К событию' | 'К календарю' | 'Назад'
 }) {
   return <Hint onClick={onClick} className="back">
     <span className="back-gesture" aria-hidden="true">{direction} Свайп </span>
@@ -113,8 +113,8 @@ function EventFacts({ event }: { event: Hackathon }) {
   </>
 }
 
-export function Calendar({ events, role, back, open, findTeam }: {
-  events: Hackathon[]; role: string; back: () => void; open: (event: Hackathon) => void; findTeam: (event: Hackathon) => void
+export function Calendar({ events, role, back, open, findTeam, openPlans }: {
+  events: Hackathon[]; role: string; back: () => void; open: (event: Hackathon) => void; findTeam: (event: Hackathon) => void; openPlans: () => void
 }) {
   const groups = new Map<string, Hackathon[]>()
   for (const event of [...events].sort((a, b) => a.startsOn.localeCompare(b.startsOn))) {
@@ -125,6 +125,7 @@ export function Calendar({ events, role, back, open, findTeam }: {
   return <>
     <Header title="Календарь событий" actions={{ up: back }}><Back direction="↑" onClick={back} /></Header>
     <p className="lead">Рекомендации для {role}</p>
+    <button className="event-secondary journey-shortcut" type="button" onClick={openPlans}>Мои хакатоны</button>
     {!groups.size && <p className="empty">Нет событий по вашим настройкам.</p>}
     <div className="calendar-groups">{[...groups].map(([month, entries]) => <section className="event-group" key={month}>
       <h2>{monthNames[Number(month.slice(5)) - 1]}</h2>
@@ -135,8 +136,8 @@ export function Calendar({ events, role, back, open, findTeam }: {
           <EventFacts event={event} />
           {event.tags.length > 0 && <p className="event-tags muted">{event.tags.join(' · ')}</p>}
           <div className="event-actions">
-            <button className="event-secondary" type="button" aria-label={`Подробнее о событии ${event.title}`} onClick={() => open(event)}>Подробнее</button>
-            <button className="primary" type="button" aria-label={`Найти команду для ${event.title}`} onClick={() => findTeam(event)}>Найти команду</button>
+            <button className="primary" type="button" aria-label={`Подробнее о событии ${event.title}`} onClick={() => open(event)}>Подробнее</button>
+            <button className="event-secondary" type="button" aria-label={`Найти команду для ${event.title}`} onClick={() => findTeam(event)}>Найти команду</button>
           </div>
         </div>
       </article>)}</div>
@@ -144,10 +145,11 @@ export function Calendar({ events, role, back, open, findTeam }: {
   </>
 }
 
-export function EventDetail({ event, back, findTeam }: { event: Hackathon; back: () => void; findTeam: () => void }) {
+export function EventDetail({ event, back, findTeam, plan }: { event: Hackathon; back: () => void; findTeam: () => void; plan: ReactNode }) {
   const officialUrl = event.eventUrl?.startsWith('https://') ? event.eventUrl : undefined
+  const registrationUrl = event.registrationUrl?.startsWith('https://') ? event.registrationUrl : undefined
   return <>
-    <Header title={event.title} actions={{ up: back }}><Back direction="↑" onClick={back} to="К календарю" /></Header>
+    <Header title={event.title} actions={{ up: back }}><Back direction="↑" onClick={back} to="Назад" /></Header>
     <div className="event-detail">
       <EventCover event={event} />
       <div className="event-detail-body">
@@ -157,10 +159,13 @@ export function EventDetail({ event, back, findTeam }: { event: Hackathon; back:
           <h2>О событии</h2>
           <p className="lead">{event.description || 'Организаторы пока не добавили описание.'}</p>
         </section>
+        {plan}
         <div className="event-detail-actions">
-          <button className="primary" type="button" onClick={findTeam}>Найти команду</button>
-          {officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer">Сайт события</a>}
+          <button className="event-secondary" type="button" onClick={findTeam}>Найти команду</button>
+          {registrationUrl ? <a className="event-secondary" href={registrationUrl} target="_blank" rel="noreferrer">Перейти к регистрации</a>
+            : officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer">Сайт события</a>}
         </div>
+        {!registrationUrl && !officialUrl && <p className="muted">Организатор пока не добавил ссылку на регистрацию.</p>}
       </div>
     </div>
   </>
@@ -248,8 +253,8 @@ const reminderOptions = [
   { value: 7, label: 'За неделю' },
 ] as const
 
-export function Own({ profile, back, saving, teamSearch, save, saveProfile }: {
-  profile: OwnProfile; back: () => void; saving: boolean; teamSearch: ReactNode
+export function Own({ profile, back, saving, teamSearch, activity, save, saveProfile }: {
+  profile: OwnProfile; back: () => void; saving: boolean; teamSearch: ReactNode; activity: ReactNode
   save: (value: Preferences) => Promise<Preferences>; saveProfile: (value: Profile) => Promise<Profile>
 }) {
   const [draft, setDraft] = useState(profile.preferences)
@@ -293,6 +298,7 @@ export function Own({ profile, back, saving, teamSearch, save, saveProfile }: {
           setEditing(true)
         }}>Редактировать профиль</button>
         {profileStatus && <p className="accent profile-save-status" role="status">{profileStatus}</p>}
+        {activity}
         {teamSearch}
         <Skills profile={profile} />
         {profile.summary && <section className="profile-section own-profile-description"><h2>Краткое описание</h2><p className="lead">{profile.summary}</p></section>}

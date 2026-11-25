@@ -37,6 +37,16 @@ export type Hackathon = {
   prizePool?: string
   description?: string
   eventUrl?: string
+  registrationUrl?: string
+}
+
+export type InvitationReply = 'accepted' | 'declined'
+export type Invitation = {
+  id: string
+  direction: 'incoming' | 'outgoing'
+  status: 'pending' | InvitationReply
+  person: { id: string; name: string; telegramUsername?: string }
+  event?: { id: string; title: string }
 }
 
 export interface Api {
@@ -44,8 +54,15 @@ export interface Api {
   saveProfile(profile: Profile): Promise<Profile>
   saveTeamSearch(mode: TeamSearch | null): Promise<TeamSearch | null>
   events(): Promise<Hackathon[]>
+  event(id: string): Promise<Hackathon | null>
+  plannedEvents(): Promise<Hackathon[]>
+  setEventPlan(id: string, planned: boolean): Promise<void>
   ongoingEvents(): Promise<Hackathon[]>
   people(eventId?: string): Promise<Person[]>
+  person(id: string): Promise<Person | null>
   invite(personId: string, eventId?: string): Promise<void>
+  invitations(): Promise<Invitation[]>
+  replyToInvitation(id: string, reply: InvitationReply): Promise<Invitation>
+  replyAsDemoRecipient?(id: string, reply: InvitationReply): Promise<Invitation>
   savePreferences(preferences: Preferences): Promise<Preferences>
 }

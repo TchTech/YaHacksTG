@@ -35,7 +35,7 @@ describe('YaHacks MVP', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Календарь событий' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Подробнее о событии AI Weekend' }))
     expect(screen.getByTestId('pathname').textContent).toBe('/calendar/ai-weekend')
-    expect(screen.getByText('500 000 ₽')).toBeTruthy()
+    expect(await screen.findByText('500 000 ₽')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Найти команду' }))
     expect(await screen.findByRole('heading', { name: 'Саша, 21' })).toBeTruthy()
     expect(screen.getByTestId('pathname').textContent).toBe('/calendar/ai-weekend/team')
@@ -51,6 +51,72 @@ describe('YaHacks MVP', () => {
     fireEvent.click(screen.getByRole('button', { name: 'К карточке' }))
     expect(await screen.findByRole('heading', { name: 'Антон, 22' })).toBeTruthy()
     expect(screen.getByTestId('pathname').textContent).toBe('/calendar/product-hack/team')
+  })
+
+  it('saves and removes plans, and opens a linked event regardless of calendar preferences', async () => {
+    localStorage.setItem('yahacks-demo-preferences', JSON.stringify({ role: 'ML Engineer', format: 'online', reminderDays: 2 }))
+    renderApp('/calendar/data-cup')
+    expect(await screen.findByRole('heading', { name: 'Student Data Cup' })).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Хочу участвовать' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Мои хакатоны' }))
+    expect(await screen.findByRole('heading', { name: 'Мои хакатоны' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Student Data Cup' })).toBeTruthy()
+    expect((await createDemoApi().plannedEvents()).map(event => event.id)).toEqual(['data-cup'])
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть событие' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Убрать из планов' }))
+    expect(await screen.findByRole('button', { name: 'Хочу участвовать' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }))
+    expect(await screen.findByRole('button', { name: 'Открыть календарь' })).toBeTruthy()
+  })
+
+  it('finds a team from the calendar, tracks an invitation and persists the recipient response', async () => {
+    renderApp('/calendar')
+    fireEvent.click(await screen.findByRole('button', { name: 'Найти команду для AI Weekend' }))
+    expect((await screen.findByRole('heading', { name: 'Саша, 21' })).textContent).toBe('Саша, 21')
+    expect(await createDemoApi().plannedEvents()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: /Запрос в команду/ }))
+    expect(await screen.findByRole('heading', { name: 'Миша, 23' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Приглашения' }))
+    const outgoing = within((await screen.findByRole('heading', { name: 'Исходящие' })).closest('section')!)
+    expect(outgoing.getByText('Ожидает ответа')).toBeTruthy()
+    expect(outgoing.getByRole('button', { name: 'AI Weekend' })).toBeTruthy()
+    fireEvent.click(outgoing.getByRole('button', { name: 'Посмотреть со стороны получателя' }))
+    fireEvent.click(outgoing.getByRole('button', { name: 'Принять' }))
+    expect(await outgoing.findByText('Принято')).toBeTruthy()
+    expect(outgoing.queryByRole('link', { name: 'Написать в Telegram' })).toBeNull()
+    const incoming = within(screen.getByRole('heading', { name: 'Входящие' }).closest('section')!)
+    fireEvent.click(incoming.getByRole('button', { name: 'Отклонить' }))
+    expect(await incoming.findByText('Отклонено')).toBeTruthy()
+    expect((await createDemoApi().invitations()).map(item => item.status)).toEqual(['accepted', 'declined'])
+
+    cleanup()
+    renderApp('/calendar/ai-weekend/team/sasha')
+    expect(await screen.findByRole('heading', { name: 'Саша' })).toBeTruthy()
+  })
+
+  it('only shows usable Telegram contacts for accepted invitations', async () => {
+    const api = createDemoApi()
+    vi.spyOn(api, 'invitations').mockResolvedValue([
+      { id: 'pending', direction: 'outgoing', status: 'pending', person: { id: 'a', name: 'A', telegramUsername: 'valid_test' } },
+      { id: 'accepted', direction: 'incoming', status: 'accepted', person: { id: 'b', name: 'B', telegramUsername: 'valid_test' } },
+      { id: 'invalid', direction: 'incoming', status: 'accepted', person: { id: 'c', name: 'C', telegramUsername: 'https://example.org' } },
+    ])
+    renderApp('/invitations', api)
+    const link = await screen.findByRole<HTMLAnchorElement>('link', { name: 'Написать в Telegram' })
+    expect(link.href).toBe('https://t.me/valid_test')
+    expect(screen.getAllByRole('link', { name: 'Написать в Telegram' })).toHaveLength(1)
+  })
+
+  it('can retry a failed invitation reply without changing its status prematurely', async () => {
+    const api = createDemoApi()
+    vi.spyOn(api, 'replyToInvitation').mockRejectedValueOnce(new Error('Связь прервалась'))
+    renderApp('/invitations', api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Принять' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Связь прервалась')
+    expect(screen.getByText('Ожидает ответа')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Принять' }))
+    expect(await screen.findByText('Принято')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('validates and saves preferences in demo mode', async () => {

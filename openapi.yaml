@@ -160,6 +160,67 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/Error'
+  /events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/EventIdPath'
+    get:
+      operationId: getEvent
+      summary: Получить событие по ID независимо от настроек календаря
+      responses:
+        '200':
+          description: Событие
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hackathon'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /me/hackathons:
+    get:
+      operationId: listPlannedHackathons
+      summary: Получить планы участия текущего пользователя
+      responses:
+        '200':
+          description: Сохранённые хакатоны
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hackathon'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /me/hackathons/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/EventIdPath'
+    put:
+      operationId: planHackathon
+      summary: Добавить событие в планы участия. Повторный запрос сохраняет один план.
+      responses:
+        '204':
+          description: Событие добавлено
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: removePlannedHackathon
+      summary: Убрать событие из планов участия
+      responses:
+        '204':
+          description: События больше нет в планах
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
   /people:
     get:
       operationId: listRecommendedPeople
@@ -168,7 +229,7 @@ paths:
         - $ref: '#/components/parameters/EventId'
       responses:
         '200':
-          description: Рекомендации в порядке приоритета с учётом события. Приглашённые по этому событию или в общем подборе без eventId исключаются в рамках соответствующего подбора.
+          description: Рекомендации в порядке приоритета. При eventId подбор учитывает участников, ищущих команду на этом событии. Уже приглашённые исключаются в рамках соответствующего подбора.
           content:
             application/json:
               schema:
@@ -185,18 +246,32 @@ paths:
                 $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
+  /people/{personId}:
+    get:
+      operationId: getPerson
+      summary: Получить доступный профиль участника по ID, даже если ему уже отправлено приглашение
+      parameters:
+        - $ref: '#/components/parameters/PersonIdPath'
+      responses:
+        '200':
+          description: Профиль участника
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
   /people/{personId}/invitation:
     put:
       operationId: invitePerson
       summary: Отправить запрос в команду
       description: Повтор запроса для той же пары пользователей и того же события возвращает 204 и сохраняет одно приглашение. Без eventId сохраняется общее приглашение для пары.
       parameters:
-        - name: personId
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
+        - $ref: '#/components/parameters/PersonIdPath'
         - $ref: '#/components/parameters/EventId'
       responses:
         '204':
@@ -211,8 +286,78 @@ paths:
                 $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
+  /me/invitations:
+    get:
+      operationId: listInvitations
+      summary: Получить входящие и исходящие приглашения текущего пользователя
+      responses:
+        '200':
+          description: Приглашения. Контакт собеседника возвращается после принятия.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /me/invitations/{invitationId}:
+    patch:
+      operationId: replyToInvitation
+      summary: Принять или отклонить входящее приглашение
+      description: Ответить может только получатель. Повтор того же ответа возвращает текущее приглашение.
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  enum: [accepted, declined]
+      responses:
+        '200':
+          description: Приглашение с сохранённым ответом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   parameters:
+    EventIdPath:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    PersonIdPath:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
     EventId:
       name: eventId
       in: query
@@ -226,6 +371,12 @@ components:
       type: http
       scheme: bearer
   responses:
+    NotFound:
+      description: Запись не найдена или недоступна текущему пользователю
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     BadRequest:
       description: Данные запроса не прошли валидацию
       content:
@@ -378,4 +529,39 @@ components:
           format: uri
           pattern: '^https://'
           description: HTTPS-ссылка на страницу события у организаторов.
+        registrationUrl:
+          type: string
+          format: uri
+          pattern: '^https://'
+          description: HTTPS-ссылка на форму регистрации организатора, если она известна.
+    Invitation:
+      type: object
+      required: [id, direction, status, person]
+      properties:
+        id:
+          type: string
+        direction:
+          enum: [incoming, outgoing]
+        status:
+          enum: [pending, accepted, declined]
+        person:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            telegramUsername:
+              type: string
+              pattern: '^[A-Za-z0-9_]{1,32}$'
+              description: Имя пользователя без знака @. Возвращается только участникам принятого приглашения.
+        event:
+          type: object
+          required: [id, title]
+          properties:
+            id:
+              type: string
+            title:
+              type: string
 

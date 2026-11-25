@@ -3,7 +3,7 @@ import aiWeekend from '../media/events/ai-weekend.webp'
 import studentDataCup from '../media/events/student-data-cup.webp'
 import mlChallenge from '../media/events/ml-challenge.webp'
 import productHack from '../media/events/product-hack.webp'
-import type { Api, Hackathon, Person, Preferences, Profile, TeamSearch } from './types'
+import type { Api, Hackathon, Invitation, InvitationReply, Person, Preferences, Profile, TeamSearch } from './types'
 
 const defaultPreferences: Preferences = { role: 'ML Engineer', format: 'any', reminderDays: 2 }
 const basePerson: Person = {
@@ -70,8 +70,28 @@ const candidatesByEvent = new Map<string, string[]>([
   ['product-hack', ['anton', 'misha']],
 ])
 const peopleById = new Map(people.map(person => [person.id, person]))
+const eventsById = new Map(events.map(event => [event.id, event]))
 const profileStorageKey = 'yahacks-demo-profile'
 const teamSearchStorageKey = 'yahacks-demo-team-search'
+const plansKey = 'yahacks-demo-planned-events'
+const invitationsKey = 'yahacks-demo-invitations'
+
+const previewInvitation: Invitation = {
+  id: 'demo-incoming-product', direction: 'incoming', status: 'pending',
+  person: { id: 'anton', name: 'Антон' }, event: { id: 'product-hack', title: 'Product Hack' },
+}
+
+function storedList<T>(key: string, fallback: T[]): T[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(key) ?? 'null')
+    if (Array.isArray(value)) return value
+  } catch { /* Keep the demo usable without browser storage. */ }
+  return fallback
+}
+
+function writeList(key: string, value: unknown[]) {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* Keep the changes in memory. */ }
+}
 
 function readTeamSearch(): TeamSearch | null {
   try {
@@ -121,7 +141,28 @@ export function createDemoApi(): Api {
   let preferences = readPreferences()
   let ownProfile = readProfile()
   let teamSearch = readTeamSearch()
-  const invitedByEvent = new Map<string | undefined, Set<string>>()
+  let plans: string[] = []
+  let invitations = [previewInvitation]
+
+  function readInvitations() { return storedList(invitationsKey, invitations) }
+
+  function updateInvitations(value: Invitation[]) {
+    invitations = value
+    writeList(invitationsKey, invitations)
+  }
+
+  function reply(id: string, status: InvitationReply, direction: Invitation['direction']) {
+    const current = readInvitations()
+    const invitation = current.find(item => item.id === id && item.direction === direction)
+    if (!invitation) throw new Error('Приглашение недоступно.')
+    if (invitation.status !== 'pending') {
+      if (invitation.status === status) return invitation
+      throw new Error('На это приглашение уже ответили.')
+    }
+    const updated = { ...invitation, status }
+    updateInvitations(current.map(item => item.id === id ? updated : item))
+    return updated
+  }
   return {
     async profile() {
       const fields = ownProfile ?? {
@@ -145,24 +186,48 @@ export function createDemoApi(): Api {
       return events.filter(event => preferences.format === 'any'
         || (event.location === 'Онлайн') === (preferences.format === 'online'))
     },
+    async event(id) { return eventsById.get(id) ?? null },
+    async plannedEvents() {
+      const selected = new Set(storedList(plansKey, plans))
+      return events.filter(event => selected.has(event.id))
+    },
+    async setEventPlan(id, planned) {
+      if (!eventsById.has(id)) throw new Error('Хакатон не найден.')
+      const selected = new Set(storedList(plansKey, plans))
+      if (planned) selected.add(id)
+      else selected.delete(id)
+      plans = [...selected]
+      writeList(plansKey, plans)
+    },
     async ongoingEvents() {
       const today = demoDates(0, 0).startsOn
       return events.filter(event => event.startsOn <= today && today <= event.endsOn)
     },
     async people(eventId) {
-      const invited = invitedByEvent.get(eventId)
-      if (eventId === undefined) return people.filter(person => !invited?.has(person.id))
+      const invited = new Set(readInvitations().filter(item => item.direction === 'outgoing' && item.event?.id === eventId)
+        .map(item => item.person.id))
+      if (eventId === undefined) return people.filter(person => !invited.has(person.id))
       const candidates = candidatesByEvent.get(eventId) ?? []
       return candidates.flatMap(id => {
         const person = peopleById.get(id)
-        return person && !invited?.has(id) ? [person] : []
+        return person && !invited.has(id) ? [person] : []
       })
     },
+    async person(id) { return peopleById.get(id) ?? null },
     async invite(personId, eventId) {
-      const invited = invitedByEvent.get(eventId) ?? new Set<string>()
-      invited.add(personId)
-      invitedByEvent.set(eventId, invited)
+      const person = peopleById.get(personId)
+      const event = eventId === undefined ? undefined : eventsById.get(eventId)
+      if (!person || (eventId !== undefined && !event)) throw new Error('Участник или хакатон не найдены.')
+      const current = readInvitations()
+      const id = JSON.stringify([personId, eventId ?? null])
+      if (!current.some(item => item.id === id)) updateInvitations([{
+        id, direction: 'outgoing', status: 'pending', person: { id: person.id, name: person.name },
+        ...(event ? { event: { id: event.id, title: event.title } } : {}),
+      }, ...current])
     },
+    async invitations() { return readInvitations() },
+    async replyToInvitation(id, status) { return reply(id, status, 'incoming') },
+    async replyAsDemoRecipient(id, status) { return reply(id, status, 'outgoing') },
     async savePreferences(value) {
       preferences = value
       try { localStorage.setItem('yahacks-demo-preferences', JSON.stringify(value)) } catch { /* Keep settings in memory. */ }
