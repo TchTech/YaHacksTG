@@ -116,7 +116,7 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
   }
 
   function beginPointer(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0 || (touchSwipe && event.pointerType === 'touch')) return
+    if (!event.isPrimary || event.button !== 0 || start.current?.source === 'touch') return
     const captureTarget = begin(event.currentTarget, event.target as Element, { source: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY })
     if (captureTarget && !captureTarget.hasPointerCapture(event.pointerId)) captureTarget.setPointerCapture(event.pointerId)
   }

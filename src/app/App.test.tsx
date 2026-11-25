@@ -30,6 +30,17 @@ afterEach(() => {
 })
 
 describe('YaHacks MVP', () => {
+  it('opens the calendar when a touchscreen supplies pointer events without touch events', async () => {
+    renderApp()
+    const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
+    Object.assign(home, { setPointerCapture: vi.fn(), hasPointerCapture: () => false })
+    for (const [type, clientY] of [['pointerdown', 180], ['pointermove', 204], ['pointerup', 216]] as const) {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: 100, clientY })
+      fireEvent(home, Object.assign(event, { isPrimary: true, pointerType: 'touch', pointerId: 1 }))
+    }
+    expect(screen.getByTestId('pathname').textContent).toBe('/calendar')
+  })
+
   it('opens the calendar from a completed touch gesture and ignores a cancelled gesture', async () => {
     renderApp()
     const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
