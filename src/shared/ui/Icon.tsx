@@ -8,6 +8,7 @@ const shapes = {
   external: <path d="M13 4h7v7m0-7-9 9m8 1v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />,
   check: <path d="m5 12 4.5 4.5L19 7" />,
   close: <path d="m6 6 12 12M18 6 6 18" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   refresh: <path d="M20 11a8 8 0 0 0-13.8-5.5L4 8m0-5v5h5m-5 5a8 8 0 0 0 13.8 5.5L20 16m0 5v-5h-5" />,
   send: <path d="m3 10 17-6-5 16-4-7-8-3Zm8 3 9-9" />,
   edit: <path d="m14.5 5.5 4 4M5 19l4.5-1 10-10a2.8 2.8 0 0 0-4-4l-10 10L5 19Z" />,

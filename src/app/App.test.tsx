@@ -114,13 +114,22 @@ describe('YaHacks MVP', () => {
     const api = createDemoApi()
     const invite = vi.spyOn(api, 'invite')
     const { container } = renderApp('/', api)
-    const swipe = (selector: string, distance: number) => {
-      const zone = container.querySelector(selector)!
+    const swipe = (selector: string, distance: number, release = 'pointerup') => {
+      const zone = container.querySelector<HTMLElement>(selector)!
       Object.assign(zone, { setPointerCapture: vi.fn() })
-      for (const [type, clientX] of [['pointerdown', 180], ['pointerup', 180 + distance]] as const) {
+      const send = (type: string, clientX: number) => {
         const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 200 })
         fireEvent(zone, Object.assign(event, { isPrimary: true, pointerId: 1 }))
       }
+      send('pointerdown', 180)
+      send('pointermove', 180 + distance)
+      if (selector === '.person-card') {
+        expect(zone.dataset.swipeDirection).toBe(distance < 0 ? 'left' : 'right')
+        expect(zone.style.getPropertyValue('--motion-x')).toBe(`${distance}px`)
+        expect(zone.querySelector(`[data-decision="${distance < 0 ? 'invite' : 'skip'}"] svg`)).toBeTruthy()
+      }
+      send(release, 180 + distance)
+      expect(zone.dataset.swipeDirection).toBeUndefined()
     }
 
     await screen.findByRole('button', { name: 'Календарь событий' })
@@ -131,12 +140,17 @@ describe('YaHacks MVP', () => {
     swipe('.home', -90)
     expect(await screen.findByRole('heading', { name: 'Саша, 21' })).toBeTruthy()
 
+    swipe('.person-card', -90, 'pointercancel')
+    expect(screen.getByRole('heading', { name: 'Саша, 21' })).toBeTruthy()
+    expect(screen.queryByText('Запрос отправлен')).toBeNull()
     swipe('.person-card', 90)
     expect(await screen.findByRole('heading', { name: 'Миша, 23' })).toBeTruthy()
     expect(invite).not.toHaveBeenCalled()
+    expect(screen.getByText('Участник пропущен').closest('.toast')?.getAttribute('data-decision')).toBe('skip')
     swipe('.person-card', -90)
     expect(await screen.findByRole('heading', { name: 'Антон, 22' })).toBeTruthy()
     expect(invite).toHaveBeenCalledExactlyOnceWith('misha', undefined)
+    expect((await screen.findByText('Запрос отправлен')).closest('.toast')?.getAttribute('data-decision')).toBe('invite')
 
     const card = container.querySelector('.person-card') as HTMLElement
     fireEvent.click(within(card).getByRole('button', { name: 'Подробнее об участнике' }))
@@ -145,6 +159,16 @@ describe('YaHacks MVP', () => {
     expect(await screen.findByRole('heading', { name: 'Антон, 22' })).toBeTruthy()
     swipe('.screen-header', 90)
     expect(screen.getByTestId('pathname').textContent).toBe('/')
+  })
+
+  it('keeps the participant and shows the error when a request fails', async () => {
+    const api = createDemoApi()
+    vi.spyOn(api, 'invite').mockRejectedValueOnce(new Error('Связь прервалась'))
+    renderApp('/people', api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Запрос в команду' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Связь прервалась')
+    expect(screen.getByRole('heading', { name: 'Саша, 21' })).toBeTruthy()
+    expect(screen.queryByText('Запрос отправлен')).toBeNull()
   })
 
   it('loads a linked participant and returns to the same event team', async () => {

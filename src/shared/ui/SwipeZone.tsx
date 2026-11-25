@@ -14,15 +14,16 @@ function setMotion(zone: HTMLDivElement, source: 'pointer' | 'wheel', dx: number
 
 function resetMotion(zone: HTMLDivElement) {
   delete zone.dataset.motion
+  delete zone.dataset.swipeDirection
   zone.style.removeProperty('--motion-x')
   zone.style.removeProperty('--motion-y')
 }
 
-export function SwipeZone({ actions, children, className = '', trackMotion = false }: {
+export function SwipeZone({ actions, children, className = '', trackMotion }: {
   actions: SwipeActions
   children: ReactNode
   className?: string
-  trackMotion?: boolean
+  trackMotion?: 'pointer' | 'pointer-and-wheel'
 }) {
   const start = useRef<{ id: number; x: number; y: number; verticalOnly: boolean } | null>(null)
   const suppressClick = useRef(false)
@@ -56,6 +57,8 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
       resetMotion(event.currentTarget)
       return
     }
+    if (horizontal) event.currentTarget.dataset.swipeDirection = dx > 0 ? 'right' : 'left'
+    else delete event.currentTarget.dataset.swipeDirection
     setMotion(event.currentTarget, 'pointer', horizontal ? dx : 0, horizontal ? 0 : dy)
   }
 
@@ -93,11 +96,11 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
   function cancel(event: PointerEvent<HTMLDivElement>) {
     if (start.current?.id !== event.pointerId) return
     start.current = null
-    if (trackMotion) resetMotion(event.currentTarget)
+    if (event.currentTarget.dataset.motion === 'pointer') resetMotion(event.currentTarget)
   }
 
   return <div className={`swipe-zone ${actions.up || actions.down ? 'swipe-vertical' : ''} ${className}`}
-    onPointerDown={begin} onPointerMove={trackMotion ? move : undefined} onWheel={trackMotion ? scroll : undefined}
+    onPointerDown={begin} onPointerMove={trackMotion ? move : undefined} onWheel={trackMotion === 'pointer-and-wheel' ? scroll : undefined}
     onPointerUp={finish} onPointerCancel={cancel} onLostPointerCapture={cancel}
     onClickCapture={event => {
       if (!suppressClick.current || event.detail === 0) return

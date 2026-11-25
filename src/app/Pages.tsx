@@ -55,8 +55,11 @@ export function EventRoute({ children, calendar }: { children: (event: Hackathon
   return children(event.value)
 }
 
+export type PeopleDecision = 'invite' | 'skip'
+
 export function PeoplePage({ event, back, fromCalendar, openPerson, openInvitations, notify }: {
-  event?: Hackathon; back: () => void; fromCalendar?: boolean; openPerson: (id: string) => void; openInvitations: () => void; notify: () => void
+  event?: Hackathon; back: () => void; fromCalendar?: boolean; openPerson: (id: string) => void; openInvitations: () => void
+  notify: (decision: PeopleDecision, name: string) => void
 }) {
   const { personId } = useParams()
   const eventId = event?.id
@@ -91,10 +94,11 @@ export function PeoplePage({ event, back, fromCalendar, openPerson, openInvitati
       if (inviting) return
       setSkipped(ids => [...ids, person.id])
       dispatch(clearInviteError(eventId))
+      notify('skip', person.name)
     }}
     invite={() => {
       void dispatch(invitePerson({ personId: person.id, eventId })).then(action => {
-        if (invitePerson.fulfilled.match(action)) notify()
+        if (invitePerson.fulfilled.match(action)) notify('invite', person.name)
       })
     }} busy={inviting} error={inviteError} /></>
 }

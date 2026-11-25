@@ -44,7 +44,7 @@ export function Back({ direction, onClick, to = 'На главную' }: {
 export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
-  return <SwipeZone className="home" actions={{ left: people, right: own, up: calendar, down: calendar }} trackMotion>
+  return <SwipeZone className="home" actions={{ left: people, right: own, up: calendar, down: calendar }} trackMotion="pointer-and-wheel">
     <span className="wordmark">YaHacks<span>.</span></span>
     <div className="home-copy">
       <div className="home-intro">
@@ -178,17 +178,22 @@ export function PersonCard({ person, detail, skip, invite, busy, error }: {
   person: Person; detail: () => void; skip: () => void; invite: () => void; busy: boolean; error: string
 }) {
   return <>
-    <SwipeZone className="person-card" actions={{ down: detail, right: skip, left: invite }}>
-      <Avatar key={person.id} profile={person} size="large" />
-      <div className="person-content">
-        <h2>{person.name}{person.age === undefined ? '' : `, ${person.age}`}</h2>
-        <p className="accent">{person.role}</p>
-        <p className="muted">{[person.city, person.status].filter(Boolean).join(' · ')}</p>
-        <Skills profile={person} />
-        <p>{person.summary}</p>
-        <button className="event-secondary person-details" type="button" data-swipe-ignore onClick={detail}>
-          <Icon name="profile" />Подробнее об участнике
-        </button>
+    <SwipeZone className="person-card" actions={busy ? { down: detail } : { down: detail, right: skip, left: invite }}
+      trackMotion={busy ? undefined : 'pointer'}>
+      <div className="person-decision" data-decision="skip" aria-hidden="true"><span className="decision-icon"><Icon name="close" /></span></div>
+      <div className="person-decision" data-decision="invite" aria-hidden="true"><span className="decision-icon"><Icon name="plus" /></span></div>
+      <div className="person-face" key={person.id}>
+        <Avatar profile={person} size="large" />
+        <div className="person-content">
+          <h2>{person.name}{person.age === undefined ? '' : `, ${person.age}`}</h2>
+          <p className="accent">{person.role}</p>
+          <p className="muted">{[person.city, person.status].filter(Boolean).join(' · ')}</p>
+          <Skills profile={person} />
+          <p>{person.summary}</p>
+          <button className="event-secondary person-details" type="button" data-swipe-ignore onClick={detail}>
+            <Icon name="profile" />Подробнее об участнике
+          </button>
+        </div>
       </div>
     </SwipeZone>
     <div className="card-actions">

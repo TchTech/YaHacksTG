@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { EventDetail, Home } from '../features/screens'
 import { bindBackButton, getWebApp, setupWebApp } from '../shared/telegram/webApp'
 import { Icon } from '../shared/ui/Icon'
-import { CalendarPage, EventRoute, PeoplePage, ProfileLoading, SettingsPage } from './Pages'
+import { CalendarPage, EventRoute, PeoplePage, ProfileLoading, SettingsPage, type PeopleDecision } from './Pages'
 import { EventPlan, InvitationsPage, MyHackathonsPage } from './JourneyPages'
 import { backPath, eventPath, routes, screenFor, teamPath } from './routes'
 import { loadProfile, selectProfile, useAppDispatch, useAppSelector } from './store'
@@ -22,7 +22,7 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
   const origin = (state as RouteState | null)?.backTo
   const screen = screenFor(pathname)
   const from = useRef<Screen>(screen)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState<{ decision: PeopleDecision; name: string } | null>(null)
   const main = useRef<HTMLElement>(null)
   const page = useRef<HTMLDivElement>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
@@ -93,10 +93,10 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
     return () => animation?.cancel()
   }, [pathname, screen])
 
-  function notify() {
-    setNotice(demo ? 'Демо: запрос отправлен. Ответ появится в приглашениях.' : 'Запрос отправлен. Ответ появится в приглашениях.')
+  function notify(decision: PeopleDecision, name: string) {
+    setNotice({ decision, name })
     window.clearTimeout(noticeTimer.current)
-    noticeTimer.current = window.setTimeout(() => setNotice(''), 2600)
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 3000)
   }
 
   return <main ref={main} className={`shell ${screen === 'home' ? 'shell-home' : ''}`}>
@@ -125,6 +125,14 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
         <Route path="*" element={<Navigate to={routes.home} replace />} />
       </Routes>}
     </div>
-    <div className={`toast ${notice ? 'toast-visible' : ''}`} role="status">{notice}</div>
+    <div role="status" aria-atomic="true">
+      {notice && <div key={`${notice.decision}:${notice.name}`} className="toast" data-decision={notice.decision}>
+        <span className="decision-icon"><Icon name={notice.decision === 'invite' ? 'check' : 'close'} /></span>
+        <div className="toast-copy">
+          <strong>{notice.decision === 'invite' ? 'Запрос отправлен' : 'Участник пропущен'}</strong>
+          <span>{notice.decision === 'invite' ? `${notice.name} · Ответ появится в приглашениях` : notice.name}</span>
+        </div>
+      </div>}
+    </div>
   </main>
 }
