@@ -32,7 +32,7 @@ export function Hint({ children, onClick, className = '' }: {
 }
 
 export function Back({ direction, onClick, to = 'На главную' }: {
-  direction: '←' | '↑' | '→'; onClick: () => void; to?: 'На главную' | 'К карточке' | 'К событию' | 'К календарю' | 'Назад'
+  direction: '←' | '↑' | '→' | '↕'; onClick: () => void; to?: 'На главную' | 'К карточке' | 'К событию' | 'К календарю' | 'Назад'
 }) {
   return <Hint onClick={onClick} className="back">
     <span className="back-gesture" aria-hidden="true">{direction} Свайп </span>
@@ -97,8 +97,8 @@ function EventFacts({ event }: { event: Hackathon }) {
   </>
 }
 
-export function Calendar({ events, role, back, open, findTeam, openPlans }: {
-  events: Hackathon[]; role: string; back: () => void; open: (event: Hackathon) => void; findTeam: (event: Hackathon) => void; openPlans: () => void
+export function Calendar({ events, role, open, findTeam, openPlans }: {
+  events: Hackathon[]; role: string; open: (event: Hackathon) => void; findTeam: (event: Hackathon) => void; openPlans: () => void
 }) {
   const groups = new Map<string, Hackathon[]>()
   for (const event of [...events].sort((a, b) => a.startsOn.localeCompare(b.startsOn))) {
@@ -107,7 +107,6 @@ export function Calendar({ events, role, back, open, findTeam, openPlans }: {
     groups.get(month)?.push(event)
   }
   return <>
-    <Header title="Календарь событий" actions={{ up: back }}><Back direction="↑" onClick={back} /></Header>
     <p className="lead">Рекомендации для {role}</p>
     <button className="event-secondary journey-shortcut" type="button" onClick={openPlans}><Icon name="plans" />Мои хакатоны</button>
     {!groups.size && <p className="empty">Нет событий по вашим настройкам.</p>}

@@ -36,13 +36,13 @@ describe('YaHacks MVP', () => {
   it.each([
     ['down with touch', 'touch', 72],
     ['up with a mouse', 'mouse', -690],
-  ] as const)('opens the calendar via a swipe %s and ignores short or cancelled gestures', async (_, pointerType, distance) => {
+  ] as const)('opens the calendar via a swipe %s and returns with the opposite swipe', async (_, pointerType, distance) => {
     renderApp()
-    const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
-    Object.assign(home, { setPointerCapture: vi.fn() })
+    let zone = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
+    Object.assign(zone, { setPointerCapture: vi.fn() })
     const sendPointer = (type: string, clientY: number) => {
       const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: 100, clientY })
-      fireEvent(home, Object.assign(event, { isPrimary: true, pointerType, pointerId: 1 }))
+      fireEvent(zone, Object.assign(event, { isPrimary: true, pointerType, pointerId: 1 }))
     }
 
     const start = 740
@@ -59,7 +59,11 @@ describe('YaHacks MVP', () => {
 
     sendPointer('pointerdown', start)
     sendPointer('pointerup', end)
-    expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
+    zone = (await screen.findByRole('heading', { name: 'Календарь событий' })).closest('.screen-header')!
+    Object.assign(zone, { setPointerCapture: vi.fn() })
+    sendPointer('pointerdown', 160)
+    sendPointer('pointerup', 160 - Math.sign(distance) * 72)
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
   })
 
   it.each([-90, 90])('opens the calendar after a vertical drag of %i on the active 3D drop', async distance => {

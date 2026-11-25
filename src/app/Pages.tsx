@@ -32,11 +32,12 @@ function useEvents() {
   return { events, retry: () => { void dispatch(loadEvents()) } }
 }
 
-export function CalendarPage(props: Omit<Parameters<typeof Calendar>[0], 'events'>) {
+export function CalendarPage({ back, ...props }: Omit<Parameters<typeof Calendar>[0], 'events'> & { back: () => void }) {
   const { events, retry } = useEvents()
-  if (events.status === 'ready') return <Calendar events={events.value} {...props} />
-  return <><Header title="Календарь событий" actions={{ up: props.back }}><Back direction="↑" onClick={props.back} /></Header>
-    <Loading state={events} retry={retry} /></>
+  return <>
+    <Header title="Календарь событий" actions={{ up: back, down: back }}><Back direction="↕" onClick={back} /></Header>
+    {events.status === 'ready' ? <Calendar events={events.value} {...props} /> : <Loading state={events} retry={retry} />}
+  </>
 }
 
 export function EventRoute({ children, calendar }: { children: (event: Hackathon) => ReactNode; calendar: () => void }) {
