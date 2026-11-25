@@ -109,6 +109,7 @@ export function WaterDrop() {
     if (gesture?.id !== event.pointerId) return
     const dx = event.clientX - gesture.x
     const dy = event.clientY - gesture.y
+    if (dy > 0 && dy >= Math.abs(dx)) return
     turn(gesture.yaw + dx * .012, gesture.pitch + dy * .01)
   }
 
@@ -132,7 +133,7 @@ export function WaterDrop() {
     <div className="home-backdrop" aria-hidden="true">
       <div className="home-drop" data-renderer={surface}><canvas ref={canvas} /></div>
     </div>
-    {surface === '3d' && <div className="drop-control" role="group" tabIndex={0} data-swipe-ignore
+    {surface === '3d' && <div className="drop-control" role="group" tabIndex={0} data-swipe-only="down"
       aria-label="Трёхмерная капля" aria-description="Используйте стрелки, чтобы менять ракурс."
       onPointerDown={begin} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}
       onKeyDown={key} />}

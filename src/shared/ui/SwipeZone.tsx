@@ -3,6 +3,11 @@ import { useEffect, useRef, type PointerEvent, type ReactNode, type WheelEvent }
 export type Direction = 'left' | 'right' | 'up' | 'down'
 export type SwipeActions = Partial<Record<Direction, () => void>>
 
+function swipeDirection(dx: number, dy: number): Direction {
+  if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left'
+  return dy > 0 ? 'down' : 'up'
+}
+
 function setMotion(zone: HTMLDivElement, source: 'pointer' | 'wheel', dx: number, dy: number) {
   const x = Math.max(-180, Math.min(180, dx))
   const y = Math.max(-150, Math.min(150, dy))
@@ -24,7 +29,7 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
   className?: string
   trackMotion?: boolean
 }) {
-  const start = useRef<{ id: number; x: number; y: number } | null>(null)
+  const start = useRef<{ id: number; x: number; y: number; only: string | null } | null>(null)
   const suppressClick = useRef(false)
   const wheel = useRef<{ x: number; y: number; timer: number } | null>(null)
 
@@ -40,9 +45,10 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
       wheel.current = null
       resetMotion(event.currentTarget)
     }
-    start.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
-    const captureTarget = target.closest('button') ?? event.currentTarget
-    captureTarget.setPointerCapture(event.pointerId)
+    const nestedControl = target.closest('[data-swipe-only]')
+    start.current = { id: event.pointerId, x: event.clientX, y: event.clientY, only: nestedControl?.getAttribute('data-swipe-only') ?? null }
+    const captureTarget = nestedControl ?? target.closest('button') ?? event.currentTarget
+    if (!captureTarget.hasPointerCapture(event.pointerId)) captureTarget.setPointerCapture(event.pointerId)
   }
 
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -50,7 +56,8 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     if (point?.id !== event.pointerId) return
     const dx = event.clientX - point.x
     const dy = event.clientY - point.y
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) {
+    const direction = swipeDirection(dx, dy)
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8 || (point.only && point.only !== direction)) {
       resetMotion(event.currentTarget)
       return
     }
@@ -82,8 +89,9 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     const dx = event.clientX - point.x
     const dy = event.clientY - point.y
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 56) return
+    const direction = swipeDirection(dx, dy)
+    if (point.only && point.only !== direction) return
     suppressClick.current = true
-    const direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')
     actions[direction]?.()
   }
 
