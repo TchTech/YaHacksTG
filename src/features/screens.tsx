@@ -4,6 +4,7 @@ import { Avatar } from '../shared/ui/Avatar'
 import { Dropdown } from '../shared/ui/Dropdown'
 import { Icon } from '../shared/ui/Icon'
 import { SwipeZone, type SwipeActions } from '../shared/ui/SwipeZone'
+import { WaterDrop } from './WaterDrop'
 import { ProfileEditor } from './ProfileEditor'
 
 export function Header({ title, children, actions = {} }: {
@@ -44,9 +45,6 @@ export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
   return <SwipeZone className="home" actions={{ right: people, left: own, up: calendar, down: calendar }} trackMotion>
-    <div className="home-backdrop" aria-hidden="true">
-      <div className="home-drop" />
-    </div>
     <span className="wordmark">YaHacks<span>.</span></span>
     <div className="home-copy">
       <div className="home-intro">
@@ -73,6 +71,7 @@ export function Home({ profile, people, own, calendar }: {
         </nav>
       </div>
     </div>
+    <WaterDrop />
   </SwipeZone>
 }
 

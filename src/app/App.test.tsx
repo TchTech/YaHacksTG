@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createWaterDrop } from '../features/waterDropRenderer'
 import { createDemoApi } from '../shared/api/demo'
 import { App } from './App'
 import { createAppStore } from './store'
+
+vi.mock('../features/waterDropRenderer', () => ({ createWaterDrop: vi.fn() }))
 
 function LocationProbe() {
   return <output data-testid="pathname">{useLocation().pathname}</output>
@@ -57,6 +60,35 @@ describe('YaHacks MVP', () => {
     sendPointer('pointerdown', start)
     sendPointer('pointerup', end)
     expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
+  })
+
+  it.each([-90, 90])('opens the calendar after a vertical drag of %i on the active 3D drop', async distance => {
+    vi.stubGlobal('WebGL2RenderingContext', class {})
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
+    const draw = vi.fn()
+    const dispose = vi.fn()
+    vi.mocked(createWaterDrop).mockReturnValueOnce({ draw, dispose })
+
+    renderApp()
+    const drop = await screen.findByRole('group', { name: 'Трёхмерная капля' })
+    Object.assign(drop, { setPointerCapture: vi.fn() })
+    const sendPointer = (type: string, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY })
+      fireEvent(drop, Object.assign(event, { isPrimary: true, pointerId: 1 }))
+    }
+
+    sendPointer('pointerdown', 220, 200)
+    sendPointer('pointermove', 320, 200)
+    sendPointer('pointerup', 320, 200)
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
+    await waitFor(() => expect(draw).toHaveBeenLastCalledWith(1.2, 0, 0))
+
+    sendPointer('pointerdown', 220, 200)
+    sendPointer('pointermove', 220, 200 + distance)
+    sendPointer('pointerup', 220, 200 + distance)
+    expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
+    expect(dispose).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('opens an event, finds a team and returns to the event', async () => {

@@ -24,7 +24,7 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
   className?: string
   trackMotion?: boolean
 }) {
-  const start = useRef<{ id: number; x: number; y: number } | null>(null)
+  const start = useRef<{ id: number; x: number; y: number; verticalOnly: boolean } | null>(null)
   const suppressClick = useRef(false)
   const wheel = useRef<{ x: number; y: number; timer: number } | null>(null)
 
@@ -40,8 +40,9 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
       wheel.current = null
       resetMotion(event.currentTarget)
     }
-    start.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
-    const captureTarget = target.closest('button') ?? event.currentTarget
+    const control = target.closest('[data-swipe-vertical-only]')
+    start.current = { id: event.pointerId, x: event.clientX, y: event.clientY, verticalOnly: Boolean(control) }
+    const captureTarget = control ?? target.closest('button') ?? event.currentTarget
     captureTarget.setPointerCapture(event.pointerId)
   }
 
@@ -50,11 +51,11 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     if (point?.id !== event.pointerId) return
     const dx = event.clientX - point.x
     const dy = event.clientY - point.y
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) {
+    const horizontal = Math.abs(dx) > Math.abs(dy)
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8 || (point.verticalOnly && horizontal)) {
       resetMotion(event.currentTarget)
       return
     }
-    const horizontal = Math.abs(dx) > Math.abs(dy)
     setMotion(event.currentTarget, 'pointer', horizontal ? dx : 0, horizontal ? 0 : dy)
   }
 
@@ -82,8 +83,10 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     const dx = event.clientX - point.x
     const dy = event.clientY - point.y
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 56) return
+    const horizontal = Math.abs(dx) > Math.abs(dy)
+    if (point.verticalOnly && horizontal) return
     suppressClick.current = true
-    const direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')
+    const direction = horizontal ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')
     actions[direction]?.()
   }
 
