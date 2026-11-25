@@ -56,7 +56,7 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
     if (screen === 'home') transform = returnEntrances[previous] ?? transform
     const animation = page.current?.animate?.(
       [{ transform, opacity: .58 }, { transform: 'none', opacity: 1 }],
-      { duration: previous === 'home' && screen === 'calendar' ? 220 : 360, easing: 'cubic-bezier(.2,.74,.22,1)' },
+      { duration: 360, easing: 'cubic-bezier(.2,.74,.22,1)' },
     )
     return () => animation?.cancel()
   }, [pathname, screen])

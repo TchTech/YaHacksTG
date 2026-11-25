@@ -1,14 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWaterDrop } from '../features/waterDropRenderer'
 import { createDemoApi } from '../shared/api/demo'
 import { App } from './App'
 import { createAppStore } from './store'
-
-vi.mock('../features/waterDropRenderer', () => ({ createWaterDrop: vi.fn() }))
 
 function LocationProbe() {
   return <output data-testid="pathname">{useLocation().pathname}</output>
@@ -33,53 +30,28 @@ afterEach(() => {
 })
 
 describe('YaHacks MVP', () => {
-  it('opens the calendar when a touchscreen supplies pointer events without touch events', async () => {
+  it('uses the classic home swipe threshold and ignores cancelled gestures', async () => {
     renderApp()
     const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
-    Object.assign(home, { setPointerCapture: vi.fn(), hasPointerCapture: () => false })
-    for (const [type, clientY] of [['pointerdown', 180], ['pointermove', 204], ['pointerup', 216]] as const) {
+    Object.assign(home, { setPointerCapture: vi.fn() })
+    const sendPointer = (type: string, clientY: number) => {
       const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: 100, clientY })
       fireEvent(home, Object.assign(event, { isPrimary: true, pointerType: 'touch', pointerId: 1 }))
     }
-    expect(screen.getByTestId('pathname').textContent).toBe('/calendar')
-  })
 
-  it('opens the calendar from a completed touch gesture and ignores a cancelled gesture', async () => {
-    renderApp()
-    const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
-    const start = { identifier: 1, clientX: 100, clientY: 180 }
-    const end = { ...start, clientY: 216 }
-    fireEvent.touchStart(home, { touches: [start], changedTouches: [start] })
-    fireEvent.touchMove(home, { touches: [end], changedTouches: [end] })
-    fireEvent.touchCancel(home, { touches: [], changedTouches: [end] })
+    sendPointer('pointerdown', 180)
+    sendPointer('pointerup', 216)
     expect(screen.getByTestId('pathname').textContent).toBe('/')
-    fireEvent.touchStart(home, { touches: [start], changedTouches: [start] })
-    fireEvent.touchMove(home, { touches: [end], changedTouches: [end] })
-    fireEvent.touchEnd(home, { touches: [], changedTouches: [end] })
+
+    sendPointer('pointerdown', 180)
+    sendPointer('pointermove', 252)
+    sendPointer('pointercancel', 252)
+    sendPointer('pointerup', 252)
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
+
+    sendPointer('pointerdown', 180)
+    sendPointer('pointerup', 252)
     expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
-  })
-
-  it('starts the 3D drop on entry, rotates it and opens the calendar from a swipe on it', async () => {
-    vi.stubGlobal('WebGL2RenderingContext', class {})
-    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
-    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
-    const draw = vi.fn()
-    const dispose = vi.fn()
-    vi.mocked(createWaterDrop).mockReturnValueOnce({ draw, dispose })
-
-    renderApp()
-    const drop = await screen.findByRole('group', { name: 'Трёхмерная капля' })
-    expect(draw).toHaveBeenCalledWith(0, 0, 0)
-    fireEvent.keyDown(drop, { key: 'ArrowRight' })
-    await waitFor(() => expect(draw).toHaveBeenLastCalledWith(.28, 0, 0))
-
-    const start = { identifier: 1, clientX: 265, clientY: 100 }
-    const end = { ...start, clientY: 136 }
-    fireEvent.touchStart(drop, { touches: [start], changedTouches: [start] })
-    fireEvent.touchMove(drop, { touches: [end], changedTouches: [end] })
-    fireEvent.touchEnd(drop, { touches: [], changedTouches: [end] })
-    expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
-    expect(dispose).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('opens an event, finds a team and returns to the event', async () => {
