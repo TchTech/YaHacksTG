@@ -44,7 +44,7 @@ export function Back({ direction, onClick, to = 'На главную' }: {
 export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
-  return <SwipeZone className="home" actions={{ right: people, left: own, down: calendar }} trackMotion>
+  return <SwipeZone className="home" actions={{ right: people, left: own, down: calendar }} trackMotion downThreshold={28}>
     <span className="wordmark">YaHacks<span>.</span></span>
     <div className="home-copy">
       <div className="home-intro">

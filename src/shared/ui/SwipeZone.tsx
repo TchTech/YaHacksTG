@@ -23,11 +23,12 @@ function resetMotion(zone: HTMLDivElement) {
   zone.style.removeProperty('--motion-y')
 }
 
-export function SwipeZone({ actions, children, className = '', trackMotion = false }: {
+export function SwipeZone({ actions, children, className = '', trackMotion = false, downThreshold = 56 }: {
   actions: SwipeActions
   children: ReactNode
   className?: string
   trackMotion?: boolean
+  downThreshold?: number
 }) {
   const start = useRef<{ id: number; x: number; y: number; only: string | null } | null>(null)
   const suppressClick = useRef(false)
@@ -88,9 +89,10 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     cancel(event)
     const dx = event.clientX - point.x
     const dy = event.clientY - point.y
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 56) return
     const direction = swipeDirection(dx, dy)
     if (point.only && point.only !== direction) return
+    const threshold = direction === 'down' ? downThreshold : 56
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold) return
     suppressClick.current = true
     actions[direction]?.()
   }

@@ -63,13 +63,14 @@ function dropGeometry() {
 }
 
 export function createWaterDrop(canvas: HTMLCanvasElement) {
+  const touchInput = window.matchMedia('(pointer: coarse)').matches
   const context = canvas.getContext('webgl2', { antialias: true, alpha: false })
   if (!context) return
   const renderer = new WebGLRenderer({ canvas, context, antialias: true, alpha: false })
   renderer.setClearColor(0x000000)
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.16
-  renderer.transmissionResolutionScale = .7
+  renderer.transmissionResolutionScale = touchInput ? .5 : .7
 
   const camera = new PerspectiveCamera(31, 1, .1, 30)
   camera.position.set(0, .01, 4.45)
@@ -101,7 +102,7 @@ export function createWaterDrop(canvas: HTMLCanvasElement) {
       const width = canvas.clientWidth
       const height = canvas.clientHeight
       if (!width || !height) return
-      const ratio = Math.min(window.devicePixelRatio, 1.5, 700 / Math.max(width, height))
+      const ratio = Math.min(window.devicePixelRatio, touchInput ? 1 : 1.5, (touchInput ? 420 : 700) / Math.max(width, height))
       if (canvas.width !== Math.floor(width * ratio) || canvas.height !== Math.floor(height * ratio)) {
         renderer.setDrawingBufferSize(width, height, ratio)
         camera.aspect = width / height
