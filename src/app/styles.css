@@ -52,6 +52,12 @@ ul { padding: 0; list-style: none; }
 .swipe-vertical { touch-action: pinch-zoom; }
 .hint { border: 0; padding: 0; color: var(--muted); background: transparent; text-align: left; line-height: 1.3; min-height: 44px; }
 .hint:hover, .card-actions button:hover { color: #fff; }
+.action-icon { width: 18px; height: 18px; flex: none; }
+:is(.primary, .event-secondary, .icon-action, .card-actions button) {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+}
+.icon-action { justify-content: flex-start; }
+.event-secondary > .action-icon { color: var(--accent); }
 .back { display: block; font-size: .8rem; }
 .back-arrow { display: none; }
 .back-label { text-transform: lowercase; }
@@ -172,9 +178,6 @@ ul { padding: 0; list-style: none; }
 .event-actions { width: 100%; padding-top: .3rem; margin-top: auto; }
 .event-actions > button { flex: 1 0 auto; font-size: .83rem; padding-inline: .65rem; }
 .event-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-height: 44px;
   padding: .45rem .8rem;
   border: 1px solid var(--line);
@@ -210,6 +213,7 @@ ul { padding: 0; list-style: none; }
 .invitation-card .hint { min-height: 44px; }
 .invitation-card .invitation-event { color: var(--accent); }
 .invitation-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
+.invitation-person { display: flex; align-items: center; gap: .6rem; min-width: 0; }
 .invitation-status { border-radius: 6px; padding: .22rem .4rem; background: var(--surface); color: var(--muted); font-size: .78rem; }
 .invitation-status.accepted { color: #addec5; background: #152820; }
 .invitation-status.pending { color: var(--accent); background: #302812; }
@@ -236,6 +240,7 @@ ul { padding: 0; list-style: none; }
 .person-card { background: var(--surface); border: 1px solid var(--line); border-radius: 17px; overflow: hidden; user-select: none; }
 .avatar { display: grid; place-items: center; width: 58px; aspect-ratio: 1; overflow: hidden; flex-shrink: 0; border-radius: 50%; background: #201d13; color: var(--accent); font-size: 1.4rem; }
 .avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.avatar-small { width: 36px; font-size: 1rem; }
 .avatar-large { width: 100%; height: clamp(170px, 34vh, 285px); aspect-ratio: auto; border-radius: 0; font-size: 4rem; }
 .avatar-large img { object-position: center 38%; }
 .person-content { padding: 1.05rem; display: grid; gap: .35rem; }

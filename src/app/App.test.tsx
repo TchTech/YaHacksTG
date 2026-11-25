@@ -92,10 +92,12 @@ describe('YaHacks MVP', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Приглашения' }))
     const outgoing = within((await screen.findByRole('heading', { name: 'Исходящие' })).closest('section')!)
     expect(outgoing.getByText('Ожидает ответа')).toBeTruthy()
+    expect(outgoing.getByRole('heading', { name: 'Саша' }).parentElement?.querySelector('.avatar img')).toBeTruthy()
     expect(outgoing.getByRole('button', { name: 'AI Weekend' })).toBeTruthy()
     fireEvent.click(outgoing.getByRole('button', { name: 'Посмотреть со стороны получателя' }))
     fireEvent.click(outgoing.getByRole('button', { name: 'Принять' }))
     expect(await outgoing.findByText('Принято')).toBeTruthy()
+    expect(outgoing.getByRole('heading', { name: 'Саша' }).parentElement?.querySelector('.avatar img')).toBeTruthy()
     expect(document.querySelector('.invitation-confetti')).toBeNull()
     expect(outgoing.queryByRole('link', { name: 'Написать в Telegram' })).toBeNull()
     const incoming = within(screen.getByRole('heading', { name: 'Входящие' }).closest('section')!)
@@ -119,6 +121,24 @@ describe('YaHacks MVP', () => {
     const link = await screen.findByRole<HTMLAnchorElement>('link', { name: 'Написать в Telegram' })
     expect(link.href).toBe('https://t.me/valid_test')
     expect(screen.getAllByRole('link', { name: 'Написать в Telegram' })).toHaveLength(1)
+  })
+
+  it('prefers the Telegram photo and falls back to the profile photo or initial', async () => {
+    const api = createDemoApi()
+    vi.spyOn(api, 'invitations').mockResolvedValue([{
+      id: 'pending', direction: 'incoming', status: 'pending',
+      person: { id: 'anya', name: 'Аня', telegramAvatarUrl: 'https://example.org/telegram.jpg', avatarUrl: 'https://example.org/profile.jpg' },
+    }])
+    renderApp('/invitations', api)
+    const heading = await screen.findByRole('heading', { name: 'Аня' })
+    const avatar = heading.parentElement!.querySelector('.avatar')!
+    const telegram = avatar.querySelector('img')!
+    expect(telegram.src).toBe('https://example.org/telegram.jpg')
+    fireEvent.error(telegram)
+    const profile = avatar.querySelector('img')!
+    expect(profile.src).toBe('https://example.org/profile.jpg')
+    fireEvent.error(profile)
+    expect(avatar.textContent).toBe('А')
   })
 
   it('can retry a failed invitation reply without changing its status prematurely', async () => {

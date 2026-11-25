@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { Hackathon, OwnProfile, Person, Preferences, Profile } from '../shared/api/types'
+import { Avatar } from '../shared/ui/Avatar'
 import { Dropdown } from '../shared/ui/Dropdown'
+import { Icon } from '../shared/ui/Icon'
 import { SwipeZone, type SwipeActions } from '../shared/ui/SwipeZone'
 import { WaterDrop } from './WaterDrop'
 import { ProfileEditor } from './ProfileEditor'
@@ -39,13 +41,6 @@ export function Back({ direction, onClick, to = 'На главную' }: {
   </Hint>
 }
 
-function HomeIcon({ children }: { children: ReactNode }) {
-  return <svg className="home-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-}
-
 export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
@@ -59,29 +54,18 @@ export function Home({ profile, people, own, calendar }: {
         <nav className="home-links" aria-label="Разделы YaHacks">
           <Hint onClick={own}>
             <span aria-hidden="true">←</span>
-            <HomeIcon>
-              <rect x="3" y="4.5" width="18" height="15" rx="3" />
-              <circle cx="9" cy="10" r="2" />
-              <path d="M5.8 16a3.5 3.5 0 0 1 6.4 0M15 10h3m-3 4h3" />
-            </HomeIcon>
+            <Icon name="profile" className="home-icon" />
             <span>Профиль <br />и настройки</span>
           </Hint>
           <Hint onClick={people}>
             <span aria-hidden="true">→</span>
-            <HomeIcon>
-              <circle cx="9" cy="8" r="3" />
-              <path d="M3 19v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1M16 5.3a3 3 0 0 1 0 5.5m2.1 3.4A4 4 0 0 1 21 18v1" />
-            </HomeIcon>
+            <Icon name="team" className="home-icon" />
             <span className="mobile-label">Люди <br />для команды</span>
             <span className="wide-label">Подбор людей</span>
           </Hint>
           <Hint className="calendar-link" onClick={calendar}>
             <span aria-hidden="true">↓</span>
-            <HomeIcon>
-              <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
-              <path d="M8 3.5v3M16 3.5v3M3.5 10h17m-5.5 4h2m-2 3h2" />
-              <rect x="7.5" y="12.5" width="4" height="4" rx="1" fill="currentColor" stroke="none" />
-            </HomeIcon>
+            <Icon name="calendar" className="home-icon" />
             <span>Календарь событий</span>
           </Hint>
         </nav>
@@ -125,7 +109,7 @@ export function Calendar({ events, role, back, open, findTeam, openPlans }: {
   return <>
     <Header title="Календарь событий" actions={{ up: back }}><Back direction="↑" onClick={back} /></Header>
     <p className="lead">Рекомендации для {role}</p>
-    <button className="event-secondary journey-shortcut" type="button" onClick={openPlans}>Мои хакатоны</button>
+    <button className="event-secondary journey-shortcut" type="button" onClick={openPlans}><Icon name="plans" />Мои хакатоны</button>
     {!groups.size && <p className="empty">Нет событий по вашим настройкам.</p>}
     <div className="calendar-groups">{[...groups].map(([month, entries]) => <section className="event-group" key={month}>
       <h2>{monthNames[Number(month.slice(5)) - 1]}</h2>
@@ -136,8 +120,8 @@ export function Calendar({ events, role, back, open, findTeam, openPlans }: {
           <EventFacts event={event} />
           {event.tags.length > 0 && <p className="event-tags muted">{event.tags.join(' · ')}</p>}
           <div className="event-actions">
-            <button className="primary" type="button" aria-label={`Подробнее о событии ${event.title}`} onClick={() => open(event)}>Подробнее</button>
-            <button className="event-secondary" type="button" aria-label={`Найти команду для ${event.title}`} onClick={() => findTeam(event)}>Найти команду</button>
+            <button className="primary" type="button" aria-label={`Подробнее о событии ${event.title}`} onClick={() => open(event)}><Icon name="details" />Подробнее</button>
+            <button className="event-secondary" type="button" aria-label={`Найти команду для ${event.title}`} onClick={() => findTeam(event)}><Icon name="team" />Найти команду</button>
           </div>
         </div>
       </article>)}</div>
@@ -169,23 +153,14 @@ export function EventDetail({ event, back, findTeam, plan }: { event: Hackathon;
         </section>
         {plan}
         <div className="event-detail-actions">
-          <button className="event-secondary" type="button" onClick={findTeam}>Найти команду</button>
-          {officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer">Сайт хакатона <span aria-hidden="true">↗</span></a>}
-          {registrationUrl && registrationUrl !== officialUrl && <a className="event-secondary" href={registrationUrl} target="_blank" rel="noreferrer">Перейти к регистрации <span aria-hidden="true">↗</span></a>}
+          <button className="event-secondary" type="button" onClick={findTeam}><Icon name="team" />Найти команду</button>
+          {officialUrl && <a className="event-secondary" href={officialUrl} target="_blank" rel="noreferrer"><Icon name="external" />Сайт хакатона</a>}
+          {registrationUrl && registrationUrl !== officialUrl && <a className="event-secondary" href={registrationUrl} target="_blank" rel="noreferrer"><Icon name="external" />Перейти к регистрации</a>}
         </div>
         {!registrationUrl && !officialUrl && <p className="muted">Организатор пока не добавил ссылку на регистрацию.</p>}
       </div>
     </div>
   </>
-}
-
-function Avatar({ profile, large = false }: { profile: Profile; large?: boolean }) {
-  const [failedUrl, setFailedUrl] = useState<string>()
-  return <div className={`avatar ${large ? 'avatar-large' : ''}`}>
-    {profile.avatarUrl && profile.avatarUrl !== failedUrl
-      ? <img src={profile.avatarUrl} alt="" draggable={false} onError={() => setFailedUrl(profile.avatarUrl)} />
-      : <span aria-hidden="true">{profile.name.slice(0, 1).toUpperCase()}</span>}
-  </div>
 }
 
 function Skills({ profile }: { profile: Profile }) {
@@ -206,7 +181,7 @@ export function PersonCard({ person, detail, skip, invite, busy, error }: {
   return <>
     <Hint className="details-hint" onClick={detail}>↓ Подробнее об участнике</Hint>
     <SwipeZone className="person-card" actions={{ down: detail, left: skip, right: invite }}>
-      <Avatar key={person.id} profile={person} large />
+      <Avatar key={person.id} profile={person} size="large" />
       <div className="person-content">
         <h2>{person.name}{person.age === undefined ? '' : `, ${person.age}`}</h2>
         <p className="accent">{person.role}</p>
@@ -217,7 +192,7 @@ export function PersonCard({ person, detail, skip, invite, busy, error }: {
     </SwipeZone>
     <div className="card-actions">
       <button type="button" disabled={busy} onClick={skip}>← Пропустить</button>
-      <button type="button" disabled={busy} onClick={invite}>{busy ? 'Отправляем…' : 'Запрос в команду →'}</button>
+      <button type="button" disabled={busy} onClick={invite}><Icon name="send" />{busy ? 'Отправляем…' : 'Запрос в команду'}</button>
     </div>
     {error && <p role="alert" className="error">{error}</p>}
   </>
@@ -304,7 +279,7 @@ export function Own({ profile, back, saving, teamSearch, activity, save, savePro
         <button className="primary profile-edit-trigger" type="button" ref={editButton} disabled={saving} onClick={() => {
           setProfileStatus('')
           setEditing(true)
-        }}>Редактировать профиль</button>
+        }}><Icon name="edit" />Редактировать профиль</button>
         {profileStatus && <p className="accent profile-save-status" role="status">{profileStatus}</p>}
         {activity}
         {teamSearch}

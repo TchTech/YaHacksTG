@@ -1,6 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Back, Header } from '../features/screens'
 import type { Hackathon, Invitation, InvitationReply } from '../shared/api/types'
+import { Avatar } from '../shared/ui/Avatar'
+import { Icon } from '../shared/ui/Icon'
 import { Loading } from './Pages'
 import { loadInvitations, loadPlans, replyToInvitation, selectInvitations, selectPlanPending, selectPlans, selectReplyPending, updatePlan } from './journeyStore'
 import { requestMessage, useAppDispatch, useAppSelector } from './store'
@@ -27,9 +29,10 @@ export function EventPlan({ event, openPlans }: { event: Hackathon; openPlans: (
     {planned && <p className="accent" role="status">Хакатон добавлен в ваши планы.</p>}
     <div className="event-detail-actions">
       <button className={planned ? 'event-secondary' : 'primary'} type="button" disabled={pending} onClick={() => { void change() }}>
+        <Icon name={planned ? 'close' : 'check'} />
         {pending ? 'Сохраняем…' : planned ? 'Убрать из планов' : 'Хочу участвовать'}
       </button>
-      {planned && <button className="hint" type="button" onClick={openPlans}>Мои хакатоны</button>}
+      {planned && <button className="hint icon-action" type="button" onClick={openPlans}><Icon name="plans" />Мои хакатоны</button>}
     </div>
     {error && <p className="error" role="alert">{error}</p>}
   </section>
@@ -45,11 +48,11 @@ export function MyHackathonsPage({ back, calendar, open }: { back: () => void; c
     <Header title="Мои хакатоны" actions={{ up: back }}><Back direction="↑" onClick={back} to="Назад" /></Header>
     {plans.status !== 'ready' ? <Loading state={plans} retry={() => { void dispatch(loadPlans()) }} /> : plans.value.length === 0 ? <div className="empty">
       <p>Хакатоны, в которых вы планируете участвовать, появятся здесь.</p>
-      <button type="button" className="primary" onClick={calendar}>Открыть календарь</button>
+      <button type="button" className="primary" onClick={calendar}><Icon name="calendar" />Открыть календарь</button>
     </div> : <ul className="journey-list">
       {[...plans.value].sort((a, b) => a.startsOn.localeCompare(b.startsOn)).map(event => <li key={event.id} className="journey-card">
         <div><h2>{event.title}</h2><p className="muted"><time dateTime={event.startsOn}>{new Date(event.startsOn).toLocaleDateString('ru', { day: 'numeric', month: 'long', timeZone: 'UTC' })}</time> · {event.location}</p></div>
-        <button className="event-secondary" type="button" onClick={() => open(event)}>Открыть событие</button>
+        <button className="event-secondary" type="button" onClick={() => open(event)}><Icon name="details" />Открыть событие</button>
       </li>)}
     </ul>}
   </>
@@ -112,20 +115,20 @@ export function InvitationsPage({ back, demo, openEvent }: {
     const contact = status === 'accepted' && username && /^[A-Za-z0-9_]{1,32}$/.test(username) ? `https://t.me/${username}` : undefined
     return <li className="journey-card invitation-card" key={id}>
       <div className="invitation-heading">
-        <h3>{person.name}</h3>
+        <div className="invitation-person"><Avatar profile={person} size="small" /><h3>{person.name}</h3></div>
         <span className={`invitation-status ${status}`}>{statusLabels[status]}</span>
       </div>
-      {event ? <button type="button" className="hint invitation-event" onClick={() => openEvent(event.id)}>{event.title}</button>
+      {event ? <button type="button" className="hint invitation-event icon-action" onClick={() => openEvent(event.id)}><Icon name="calendar" />{event.title}</button>
         : <p className="muted">Без привязки к хакатону</p>}
       {demo && direction === 'outgoing' && status === 'pending' && <button className="hint" type="button" onClick={() => setPreview(asRecipient ? undefined : id)}>
         {asRecipient ? 'Закрыть демо-просмотр' : 'Посмотреть со стороны получателя'}
       </button>}
       {asRecipient && <p className="muted">Деморежим. Вы отвечаете от лица {person.name}.</p>}
       {canReply && <div className="event-detail-actions">
-        <button className="primary" type="button" disabled={pending !== null} onClick={event => accept(invitation, asRecipient, event.currentTarget)}>Принять</button>
-        <button className="event-secondary" type="button" disabled={pending !== null} onClick={() => { void reply(invitation, 'declined', asRecipient) }}>Отклонить</button>
+        <button className="primary" type="button" disabled={pending !== null} onClick={event => accept(invitation, asRecipient, event.currentTarget)}><Icon name="check" />Принять</button>
+        <button className="event-secondary" type="button" disabled={pending !== null} onClick={() => { void reply(invitation, 'declined', asRecipient) }}><Icon name="close" />Отклонить</button>
       </div>}
-      {contact && <a className="event-secondary" href={contact} target="_blank" rel="noreferrer">Написать в Telegram</a>}
+      {contact && <a className="event-secondary" href={contact} target="_blank" rel="noreferrer"><Icon name="send" />Написать в Telegram</a>}
       {status === 'accepted' && !contact && <p className="muted">{demo ? 'В реальном режиме здесь появится контакт собеседника в Telegram.' : 'Собеседник не указал имя пользователя в Telegram.'}</p>}
       {confetti?.id === id && <span className="invitation-confetti" aria-hidden="true"
         style={{ '--burst-x': `${confetti.x}px`, '--burst-y': `${confetti.y}px` } as CSSProperties}
@@ -138,7 +141,7 @@ export function InvitationsPage({ back, demo, openEvent }: {
   return <>
     <Header title="Приглашения" actions={{ up: back }}><Back direction="↑" onClick={back} to="Назад" /></Header>
     {invitations.status !== 'ready' ? <Loading state={invitations} retry={() => { void dispatch(loadInvitations()) }} /> : <>
-      <button className="event-secondary" type="button" disabled={pending !== null} onClick={() => { void dispatch(loadInvitations()) }}>Обновить приглашения</button>
+      <button className="event-secondary" type="button" disabled={pending !== null} onClick={() => { void dispatch(loadInvitations()) }}><Icon name="refresh" />Обновить приглашения</button>
       {error && <p className="error invitation-error" role="alert">{error}</p>}
       <div className="invitation-columns">
         {(['incoming', 'outgoing'] as const).map(direction => {

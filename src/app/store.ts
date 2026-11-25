@@ -73,8 +73,8 @@ const profileSlice = createSlice({
     .addCase(saveProfile.fulfilled, (state, action) => {
       state.saving = false
       if (state.profile.status === 'ready') {
-        const { preferences, teamSearch } = state.profile.value
-        state.profile.value = { ...action.payload, preferences, ...(teamSearch === undefined ? {} : { teamSearch }) }
+        const { preferences, teamSearch, telegramAvatarUrl } = state.profile.value
+        state.profile.value = { ...action.payload, preferences, teamSearch, telegramAvatarUrl }
       }
     })
     .addCase(saveTeamSearch.fulfilled, (state, action) => {

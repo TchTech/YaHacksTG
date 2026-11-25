@@ -19,12 +19,14 @@ export type Profile = {
   projects: string[]
 }
 
-export type Person = Profile & { id: string }
+type TelegramAvatar = { telegramAvatarUrl?: string }
+export type AvatarProfile = Pick<Profile, 'name' | 'avatarUrl'> & TelegramAvatar
+export type Person = Profile & TelegramAvatar & { id: string }
 export type TeamSearch =
   | { kind: 'event'; eventId: string; eventTitle: string }
   | { kind: 'other'; title?: string }
 
-export type OwnProfile = Profile & { preferences: Preferences; teamSearch?: TeamSearch | null }
+export type OwnProfile = Profile & TelegramAvatar & { preferences: Preferences; teamSearch?: TeamSearch | null }
 
 export type Hackathon = {
   id: string
@@ -45,7 +47,7 @@ export type Invitation = {
   id: string
   direction: 'incoming' | 'outgoing'
   status: 'pending' | InvitationReply
-  person: { id: string; name: string; telegramUsername?: string }
+  person: AvatarProfile & { id: string; telegramUsername?: string }
   event?: { id: string; title: string }
 }
 

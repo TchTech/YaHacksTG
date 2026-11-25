@@ -12,7 +12,7 @@ paths:
     post:
       operationId: createTelegramSession
       summary: Создать сессию Mini App
-      description: Сервер проверяет подпись initData и допустимый возраст auth_date по правилам Telegram.
+      description: Сервер проверяет подпись initData и допустимый возраст auth_date по правилам Telegram. После проверки сервер обновляет фото пользователя по полю user.photo_url и очищает прежнее значение, если Telegram не передал фото.
       security: []
       requestBody:
         required: true
@@ -437,6 +437,7 @@ components:
         avatarUrl:
           type: string
           format: uri
+          description: Редактируемая ссылка на фото профиля.
         role:
           type: string
         status:
@@ -453,6 +454,12 @@ components:
           $ref: '#/components/schemas/TextList'
         projects:
           $ref: '#/components/schemas/TextList'
+    TelegramAvatarUrl:
+      type: string
+      format: uri
+      pattern: '^https://'
+      readOnly: true
+      description: Фото из user.photo_url проверенных данных входа в Telegram. Поле отсутствует, если фото недоступно.
     Person:
       allOf:
         - $ref: '#/components/schemas/Profile'
@@ -462,6 +469,8 @@ components:
             id:
               type: string
               minLength: 1
+            telegramAvatarUrl:
+              $ref: '#/components/schemas/TelegramAvatarUrl'
     OwnProfile:
       allOf:
         - $ref: '#/components/schemas/Profile'
@@ -470,6 +479,8 @@ components:
           properties:
             preferences:
               $ref: '#/components/schemas/Preferences'
+            telegramAvatarUrl:
+              $ref: '#/components/schemas/TelegramAvatarUrl'
             teamSearch:
               $ref: '#/components/schemas/TeamSearchMode'
     TeamSearchMode:
@@ -552,6 +563,11 @@ components:
               type: string
             name:
               type: string
+            avatarUrl:
+              type: string
+              format: uri
+            telegramAvatarUrl:
+              $ref: '#/components/schemas/TelegramAvatarUrl'
             telegramUsername:
               type: string
               pattern: '^[A-Za-z0-9_]{1,32}$'

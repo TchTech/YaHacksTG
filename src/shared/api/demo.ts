@@ -144,7 +144,12 @@ export function createDemoApi(): Api {
   let plans: string[] = []
   let invitations = [previewInvitation]
 
-  function readInvitations() { return storedList(invitationsKey, invitations) }
+  function readInvitations() {
+    return storedList(invitationsKey, invitations).map(item => {
+      const avatarUrl = peopleById.get(item.person.id)?.avatarUrl
+      return avatarUrl ? { ...item, person: { ...item.person, avatarUrl } } : item
+    })
+  }
 
   function updateInvitations(value: Invitation[]) {
     invitations = value

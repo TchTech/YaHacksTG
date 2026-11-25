@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Back, Calendar, Detail, Header, Own, PeopleHeader, PersonCard } from '../features/screens'
 import { TeamSearchPanel } from '../features/TeamSearchPanel'
 import type { Hackathon, OwnProfile, TeamSearch } from '../shared/api/types'
+import { Icon } from '../shared/ui/Icon'
 import { loadEvent, loadPerson, selectEvent, selectPerson } from './journeyStore'
 import {
   clearInviteError, invitePerson, loadEvents, loadOngoingEvents, loadPeople, loadProfile, requestMessage, savePreferences, saveProfile, saveTeamSearch,
@@ -76,7 +77,7 @@ export function PeoplePage({ event, back, fromCalendar, openPerson, openInvitati
     return personDetail.value ? <Detail person={personDetail.value} back={back} /> : <>{header}<p className="empty">Профиль участника недоступен.</p></>
   }
   const header = <><PeopleHeader back={back} event={event} fromCalendar={fromCalendar} />
-    <button className="event-secondary journey-shortcut" type="button" onClick={openInvitations}>Приглашения</button></>
+    <button className="event-secondary journey-shortcut" type="button" onClick={openInvitations}><Icon name="invitations" />Приглашения</button></>
   if (people.status !== 'ready') return <>{header}<Loading state={people} retry={retry} /></>
   const person = people.value.find(candidate => !skipped.includes(candidate.id))
   if (!person) return <>{header}<div className="empty"><p>{event ? 'Для этого события пока нет новых рекомендаций.' : 'Новых рекомендаций пока нет.'}</p>

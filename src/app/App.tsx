@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { EventDetail, Home } from '../features/screens'
 import { bindBackButton, getWebApp, setupWebApp } from '../shared/telegram/webApp'
+import { Icon } from '../shared/ui/Icon'
 import { CalendarPage, EventRoute, PeoplePage, ProfileLoading, SettingsPage } from './Pages'
 import { EventPlan, InvitationsPage, MyHackathonsPage } from './JourneyPages'
 import { backPath, eventPath, routes, screenFor, teamPath } from './routes'
@@ -86,8 +87,8 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
         <Route path={routes.plans} element={<MyHackathonsPage back={back} calendar={() => open(routes.calendar)} open={event => open(eventPath(event.id))} />} />
         <Route path={routes.invitations} element={<InvitationsPage back={back} demo={demo} openEvent={id => open(eventPath(id))} />} />
         <Route path={routes.settings} element={<SettingsPage profile={profile.value} back={back} activity={<nav className="profile-activity" aria-label="Моя активность">
-          <button className="event-secondary" type="button" onClick={openPlans}>Мои хакатоны</button>
-          <button className="event-secondary" type="button" onClick={openInvitations}>Приглашения</button>
+          <button className="event-secondary" type="button" onClick={openPlans}><Icon name="plans" />Мои хакатоны</button>
+          <button className="event-secondary" type="button" onClick={openInvitations}><Icon name="invitations" />Приглашения</button>
         </nav>} />} />
         <Route path="*" element={<Navigate to={routes.home} replace />} />
       </Routes>}
