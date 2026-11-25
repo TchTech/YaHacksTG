@@ -97,7 +97,7 @@ ul { padding: 0; list-style: none; }
   transform: translate3d(calc(var(--motion-x, 0px) * .84), calc(var(--motion-y, 0px) * .58), 0);
   transition: transform 560ms var(--glass-ease);
 }
-.home-drop:not([data-renderer='3d'])::before {
+.home-drop[data-renderer='fallback']::before {
   content: '';
   position: absolute;
   inset: 0;

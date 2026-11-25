@@ -26,6 +26,8 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
   const main = useRef<HTMLElement>(null)
   const page = useRef<HTMLDivElement>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
+  const calendarExit = useRef<Animation | null>(null)
+  const calendarReturnOffset = useRef<number | null>(null)
 
   const open = (path: string) => navigate(path, { state: { backTo: pathname } satisfies RouteState })
   const openPlans = () => open(routes.plans)
@@ -36,12 +38,39 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
     else navigate(destination, { replace: true })
   }, [navigate, pathname, origin])
 
+  function swipeBackFromCalendar(direction: 'up' | 'down') {
+    if (calendarExit.current) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      back()
+      return
+    }
+    const offset = direction === 'up' ? -48 : 48
+    const animation = page.current?.animate?.(
+      [{ transform: 'none', opacity: 1 }, { transform: `translateY(${offset}px)`, opacity: 0 }],
+      { duration: 170, easing: 'ease-in', fill: 'forwards' },
+    )
+    if (!animation) {
+      back()
+      return
+    }
+    calendarExit.current = animation
+    void animation.finished.then(() => {
+      if (calendarExit.current !== animation) return
+      calendarReturnOffset.current = -offset
+      back()
+    }, () => {})
+  }
+
   useEffect(() => {
     if (profile.status === 'idle') void dispatch(loadProfile())
   }, [dispatch, profile.status])
   useEffect(() => setupWebApp(webApp), [webApp])
   useEffect(() => bindBackButton(webApp, screen === 'home' ? undefined : back), [webApp, screen, back])
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
+  useLayoutEffect(() => () => {
+    calendarExit.current?.cancel()
+    calendarExit.current = null
+  }, [pathname])
   useEffect(() => {
     window.scrollTo(0, 0)
     if (profile.status === 'ready') main.current?.querySelector('h1')?.focus({ preventScroll: true })
@@ -50,10 +79,13 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
   useLayoutEffect(() => {
     const previous = from.current
     from.current = screen
+    const returnOffset = calendarReturnOffset.current
+    calendarReturnOffset.current = null
     if (previous === screen || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let transform = screen === 'detail' ? 'translateY(-20px)' : 'translateY(20px)'
     if (previous === 'home') transform = homeEntrances[screen] ?? transform
     if (screen === 'home') transform = returnEntrances[previous] ?? transform
+    if (screen === 'home' && previous === 'calendar' && returnOffset !== null) transform = `translateY(${returnOffset}px)`
     const animation = page.current?.animate?.(
       [{ transform, opacity: .58 }, { transform: 'none', opacity: 1 }],
       { duration: 360, easing: 'cubic-bezier(.2,.74,.22,1)' },
@@ -73,7 +105,7 @@ export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; d
       {profile.status !== 'ready' ? <ProfileLoading profile={profile} /> : <Routes>
         <Route path={routes.home} element={<Home profile={profile.value}
           people={() => open(teamPath())} own={() => open(routes.settings)} calendar={() => open(routes.calendar)} />} />
-        <Route path={routes.calendar} element={<CalendarPage role={profile.value.preferences.role} back={back}
+        <Route path={routes.calendar} element={<CalendarPage role={profile.value.preferences.role} back={back} swipeBack={swipeBackFromCalendar}
           open={event => open(eventPath(event.id))} findTeam={event => open(teamPath(event.id))} openPlans={openPlans} />} />
         <Route path={routes.event} element={<EventRoute calendar={back}>
           {event => <EventDetail event={event} back={back} findTeam={() => open(teamPath(event.id))}

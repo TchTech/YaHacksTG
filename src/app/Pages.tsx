@@ -32,10 +32,12 @@ function useEvents() {
   return { events, retry: () => { void dispatch(loadEvents()) } }
 }
 
-export function CalendarPage({ back, ...props }: Omit<Parameters<typeof Calendar>[0], 'events'> & { back: () => void }) {
+export function CalendarPage({ back, swipeBack, ...props }: Omit<Parameters<typeof Calendar>[0], 'events'> & {
+  back: () => void; swipeBack: (direction: 'up' | 'down') => void
+}) {
   const { events, retry } = useEvents()
   return <>
-    <Header title="Календарь событий" actions={{ up: back, down: back }}><Back direction="↕" onClick={back} /></Header>
+    <Header title="Календарь событий" actions={{ up: () => swipeBack('up'), down: () => swipeBack('down') }}><Back direction="↕" onClick={back} /></Header>
     {events.status === 'ready' ? <Calendar events={events.value} {...props} /> : <Loading state={events} retry={retry} />}
   </>
 }
