@@ -106,6 +106,43 @@ describe('YaHacks MVP', () => {
     expect(await screen.findByRole('heading', { name: 'AI Weekend' })).toBeTruthy()
   })
 
+  it('uses the reversed horizontal gestures for navigation, team actions and return', async () => {
+    const api = createDemoApi()
+    const invite = vi.spyOn(api, 'invite')
+    const { container } = renderApp('/', api)
+    const swipe = (selector: string, distance: number) => {
+      const zone = container.querySelector(selector)!
+      Object.assign(zone, { setPointerCapture: vi.fn() })
+      for (const [type, clientX] of [['pointerdown', 180], ['pointerup', 180 + distance]] as const) {
+        const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 200 })
+        fireEvent(zone, Object.assign(event, { isPrimary: true, pointerId: 1 }))
+      }
+    }
+
+    await screen.findByRole('button', { name: 'Календарь событий' })
+    swipe('.home', 90)
+    expect(await screen.findByRole('heading', { name: 'Профиль и настройки' })).toBeTruthy()
+    swipe('.own-screen', -90)
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
+    swipe('.home', -90)
+    expect(await screen.findByRole('heading', { name: 'Саша, 21' })).toBeTruthy()
+
+    swipe('.person-card', 90)
+    expect(await screen.findByRole('heading', { name: 'Миша, 23' })).toBeTruthy()
+    expect(invite).not.toHaveBeenCalled()
+    swipe('.person-card', -90)
+    expect(await screen.findByRole('heading', { name: 'Антон, 22' })).toBeTruthy()
+    expect(invite).toHaveBeenCalledExactlyOnceWith('misha', undefined)
+
+    const card = container.querySelector('.person-card') as HTMLElement
+    fireEvent.click(within(card).getByRole('button', { name: 'Подробнее об участнике' }))
+    expect(await screen.findByRole('heading', { name: 'Профиль участника' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'К карточке' }))
+    expect(await screen.findByRole('heading', { name: 'Антон, 22' })).toBeTruthy()
+    swipe('.screen-header', 90)
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
+  })
+
   it('loads a linked participant and returns to the same event team', async () => {
     renderApp('/calendar/product-hack/team/anton')
     expect(await screen.findByRole('heading', { name: 'Антон' })).toBeTruthy()

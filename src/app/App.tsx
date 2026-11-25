@@ -11,8 +11,8 @@ import { loadProfile, selectProfile, useAppDispatch, useAppSelector } from './st
 type Screen = ReturnType<typeof screenFor>
 type RouteState = { backTo?: string }
 
-const homeEntrances: Partial<Record<Screen, string>> = { people: 'translateX(-42px)', settings: 'translateX(42px)', calendar: 'translateY(-28px)' }
-const returnEntrances: Partial<Record<Screen, string>> = { people: 'translateX(42px)', settings: 'translateX(-42px)', calendar: 'translateY(28px)' }
+const homeEntrances: Partial<Record<Screen, string>> = { people: 'translateX(42px)', settings: 'translateX(-42px)', calendar: 'translateY(-28px)' }
+const returnEntrances: Partial<Record<Screen, string>> = { people: 'translateX(-42px)', settings: 'translateX(42px)', calendar: 'translateY(28px)' }
 
 export function App({ webApp, demo }: { webApp?: ReturnType<typeof getWebApp>; demo: boolean }) {
   const dispatch = useAppDispatch()

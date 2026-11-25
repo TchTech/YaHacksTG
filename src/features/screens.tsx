@@ -44,7 +44,7 @@ export function Back({ direction, onClick, to = 'На главную' }: {
 export function Home({ profile, people, own, calendar }: {
   profile: OwnProfile; people: () => void; own: () => void; calendar: () => void
 }) {
-  return <SwipeZone className="home" actions={{ right: people, left: own, up: calendar, down: calendar }} trackMotion>
+  return <SwipeZone className="home" actions={{ left: people, right: own, up: calendar, down: calendar }} trackMotion>
     <span className="wordmark">YaHacks<span>.</span></span>
     <div className="home-copy">
       <div className="home-intro">
@@ -52,16 +52,16 @@ export function Home({ profile, people, own, calendar }: {
         <h1 tabIndex={-1}>Твои хакатоны.<br />Твоя команда.</h1>
         <p className="lead">Подбираем события и людей по твоей роли и интересам.</p>
         <nav className="home-links" aria-label="Разделы YaHacks">
-          <Hint onClick={own}>
-            <span aria-hidden="true">←</span>
-            <Icon name="profile" className="home-icon" />
-            <span>Профиль <br />и настройки</span>
-          </Hint>
           <Hint onClick={people}>
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true">←</span>
             <Icon name="team" className="home-icon" />
             <span className="mobile-label">Люди <br />для команды</span>
             <span className="wide-label">Подбор людей</span>
+          </Hint>
+          <Hint onClick={own}>
+            <span aria-hidden="true">→</span>
+            <Icon name="profile" className="home-icon" />
+            <span>Профиль <br />и настройки</span>
           </Hint>
           <Hint className="calendar-link" onClick={calendar}>
             <span aria-hidden="true">↓</span>
@@ -170,7 +170,7 @@ function Skills({ profile }: { profile: Profile }) {
 export function PeopleHeader({ back, event, fromCalendar }: { back: () => void; event?: Hackathon; fromCalendar?: boolean }) {
   const destination = fromCalendar ? 'К календарю' : event ? 'К событию' : 'На главную'
   return <>
-    <Header title="Подбор людей" actions={{ left: back }}><Back direction="←" onClick={back} to={destination} /></Header>
+    <Header title="Подбор людей" actions={{ right: back }}><Back direction="→" onClick={back} to={destination} /></Header>
     {event && <p className="people-event lead">Команда на <strong>{event.title}</strong></p>}
   </>
 }
@@ -179,8 +179,7 @@ export function PersonCard({ person, detail, skip, invite, busy, error }: {
   person: Person; detail: () => void; skip: () => void; invite: () => void; busy: boolean; error: string
 }) {
   return <>
-    <Hint className="details-hint" onClick={detail}>↓ Подробнее об участнике</Hint>
-    <SwipeZone className="person-card" actions={{ down: detail, left: skip, right: invite }}>
+    <SwipeZone className="person-card" actions={{ down: detail, right: skip, left: invite }}>
       <Avatar key={person.id} profile={person} size="large" />
       <div className="person-content">
         <h2>{person.name}{person.age === undefined ? '' : `, ${person.age}`}</h2>
@@ -188,11 +187,14 @@ export function PersonCard({ person, detail, skip, invite, busy, error }: {
         <p className="muted">{[person.city, person.status].filter(Boolean).join(' · ')}</p>
         <Skills profile={person} />
         <p>{person.summary}</p>
+        <button className="event-secondary person-details" type="button" data-swipe-ignore onClick={detail}>
+          <Icon name="profile" />Подробнее об участнике
+        </button>
       </div>
     </SwipeZone>
     <div className="card-actions">
-      <button type="button" disabled={busy} onClick={skip}>← Пропустить</button>
-      <button type="button" disabled={busy} onClick={invite}><Icon name="send" />{busy ? 'Отправляем…' : 'Запрос в команду'}</button>
+      <button className="invite-action" type="button" disabled={busy} onClick={invite}><span className="swipe-arrow" aria-hidden="true">←</span><Icon name="send" />{busy ? 'Отправляем…' : 'Запрос в команду'}</button>
+      <button type="button" disabled={busy} onClick={skip}>Пропустить <span aria-hidden="true">→</span></button>
     </div>
     {error && <p role="alert" className="error">{error}</p>}
   </>
@@ -267,8 +269,8 @@ export function Own({ profile, back, saving, teamSearch, activity, save, savePro
     }
   }
 
-  return <SwipeZone className="own-screen" actions={{ right: back }}>
-    <ScreenHeading title={editing ? 'Редактирование профиля' : 'Профиль и настройки'}><Back direction="→" onClick={back} /></ScreenHeading>
+  return <SwipeZone className="own-screen" actions={{ left: back }}>
+    <ScreenHeading title={editing ? 'Редактирование профиля' : 'Профиль и настройки'}><Back direction="←" onClick={back} /></ScreenHeading>
     {editing ? <ProfileEditor profile={profile} saving={saving} save={saveProfile} finish={finishEditing} /> : <div className="profile-layout">
       <div className="profile-overview">
         <div className="profile-head"><Avatar profile={profile} /><div>
