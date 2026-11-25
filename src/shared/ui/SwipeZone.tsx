@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
+import { useEffect, useRef, type PointerEvent, type ReactNode, type TouchEvent, type WheelEvent } from 'react'
 
 export type Direction = 'left' | 'right' | 'up' | 'down'
 export type SwipeActions = Partial<Record<Direction, () => void>>
@@ -23,47 +23,56 @@ function resetMotion(zone: HTMLDivElement) {
   zone.style.removeProperty('--motion-y')
 }
 
-export function SwipeZone({ actions, children, className = '', trackMotion = false, downThreshold = 56 }: {
+export function SwipeZone({ actions, children, className = '', trackMotion = false, downThreshold = 56, wheelDown = false, touchSwipe = false }: {
   actions: SwipeActions
   children: ReactNode
   className?: string
   trackMotion?: boolean
   downThreshold?: number
+  wheelDown?: boolean
+  touchSwipe?: boolean
 }) {
-  const start = useRef<{ id: number; x: number; y: number; only: string | null } | null>(null)
+  const zoneRef = useRef<HTMLDivElement>(null)
+  const start = useRef<{ source: 'pointer' | 'touch'; id: number; x: number; y: number; only: string | null } | null>(null)
   const suppressClick = useRef(false)
-  const wheel = useRef<{ x: number; y: number; timer: number } | null>(null)
+  const wheel = useRef<{ x: number; y: number; totalX: number; totalY: number; timer: number } | null>(null)
 
   useEffect(() => () => window.clearTimeout(wheel.current?.timer), [])
+  useEffect(() => {
+    const zone = zoneRef.current
+    if (!touchSwipe || !zone) return
+    function keepTouch(event: globalThis.TouchEvent) {
+      if (start.current?.source === 'touch' && event.touches.length === 1 && event.cancelable) event.preventDefault()
+    }
+    zone.addEventListener('touchmove', keepTouch, { passive: false })
+    return () => zone.removeEventListener('touchmove', keepTouch)
+  }, [touchSwipe])
 
-  function begin(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0) return
+  function begin(zone: HTMLDivElement, target: Element, point: Omit<NonNullable<typeof start.current>, 'only'>) {
     suppressClick.current = false
-    const target = event.target as Element
-    if (target.closest('input, select, textarea, label, a, [data-swipe-ignore]')) return
+    if (target.closest('input, select, textarea, label, a, [data-swipe-ignore]')) return false
     if (wheel.current) {
       window.clearTimeout(wheel.current.timer)
       wheel.current = null
-      resetMotion(event.currentTarget)
+      resetMotion(zone)
     }
     const nestedControl = target.closest('[data-swipe-only]')
-    start.current = { id: event.pointerId, x: event.clientX, y: event.clientY, only: nestedControl?.getAttribute('data-swipe-only') ?? null }
-    const captureTarget = nestedControl ?? target.closest('button') ?? event.currentTarget
-    if (!captureTarget.hasPointerCapture(event.pointerId)) captureTarget.setPointerCapture(event.pointerId)
+    start.current = { ...point, only: nestedControl?.getAttribute('data-swipe-only') ?? null }
+    return nestedControl ?? target.closest('button') ?? zone
   }
 
-  function move(event: PointerEvent<HTMLDivElement>) {
+  function move(zone: HTMLDivElement, source: 'pointer' | 'touch', id: number, x: number, y: number) {
     const point = start.current
-    if (point?.id !== event.pointerId) return
-    const dx = event.clientX - point.x
-    const dy = event.clientY - point.y
+    if (!trackMotion || point?.source !== source || point.id !== id) return
+    const dx = x - point.x
+    const dy = y - point.y
     const direction = swipeDirection(dx, dy)
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 8 || (point.only && point.only !== direction)) {
-      resetMotion(event.currentTarget)
+      resetMotion(zone)
       return
     }
     const horizontal = Math.abs(dx) > Math.abs(dy)
-    setMotion(event.currentTarget, 'pointer', horizontal ? dx : 0, horizontal ? 0 : dy)
+    setMotion(zone, 'pointer', horizontal ? dx : 0, horizontal ? 0 : dy)
   }
 
   function scroll(event: WheelEvent<HTMLDivElement>) {
@@ -76,19 +85,23 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     const previous = wheel.current
     window.clearTimeout(previous?.timer)
     const offset = setMotion(zone, 'wheel', (previous?.x ?? 0) * .75 - dx, (previous?.y ?? 0) * .75 - dy)
+    const totalX = (previous?.totalX ?? 0) + dx
+    const totalY = (previous?.totalY ?? 0) + dy
     const timer = window.setTimeout(() => {
       wheel.current = null
       resetMotion(zone)
+      const page = document.scrollingElement
+      if (wheelDown && page && page.scrollHeight <= page.clientHeight + 1 && totalY >= 48 && totalY > Math.abs(totalX)) actions.down?.()
     }, 160)
-    wheel.current = { ...offset, timer }
+    wheel.current = { ...offset, totalX, totalY, timer }
   }
 
-  function finish(event: PointerEvent<HTMLDivElement>) {
+  function finish(zone: HTMLDivElement, source: 'pointer' | 'touch', id: number, x: number, y: number) {
     const point = start.current
-    if (point?.id !== event.pointerId) return
-    cancel(event)
-    const dx = event.clientX - point.x
-    const dy = event.clientY - point.y
+    if (point?.source !== source || point.id !== id) return
+    cancel(zone)
+    const dx = x - point.x
+    const dy = y - point.y
     const direction = swipeDirection(dx, dy)
     if (point.only && point.only !== direction) return
     const threshold = direction === 'down' ? downThreshold : 56
@@ -97,15 +110,45 @@ export function SwipeZone({ actions, children, className = '', trackMotion = fal
     actions[direction]?.()
   }
 
-  function cancel(event: PointerEvent<HTMLDivElement>) {
-    if (start.current?.id !== event.pointerId) return
+  function cancel(zone: HTMLDivElement) {
     start.current = null
-    if (trackMotion) resetMotion(event.currentTarget)
+    if (trackMotion) resetMotion(zone)
   }
 
-  return <div className={`swipe-zone ${actions.up || actions.down ? 'swipe-vertical' : ''} ${className}`}
-    onPointerDown={begin} onPointerMove={trackMotion ? move : undefined} onWheel={trackMotion ? scroll : undefined}
-    onPointerUp={finish} onPointerCancel={cancel} onLostPointerCapture={cancel}
+  function beginPointer(event: PointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || event.button !== 0 || (touchSwipe && event.pointerType === 'touch')) return
+    const captureTarget = begin(event.currentTarget, event.target as Element, { source: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY })
+    if (captureTarget && !captureTarget.hasPointerCapture(event.pointerId)) captureTarget.setPointerCapture(event.pointerId)
+  }
+
+  function cancelPointer(event: PointerEvent<HTMLDivElement>) {
+    if (start.current?.source === 'pointer' && start.current.id === event.pointerId) cancel(event.currentTarget)
+  }
+
+  function beginTouch(event: TouchEvent<HTMLDivElement>) {
+    if (event.touches.length !== 1) {
+      if (start.current?.source === 'touch') cancel(event.currentTarget)
+      return
+    }
+    const touch = event.changedTouches[0]
+    if (touch) begin(event.currentTarget, event.target as Element, { source: 'touch', id: touch.identifier, x: touch.clientX, y: touch.clientY })
+  }
+
+  return <div ref={zoneRef} className={`swipe-zone ${actions.up || actions.down ? 'swipe-vertical' : ''} ${className}`}
+    onPointerDown={beginPointer} onWheel={trackMotion ? scroll : undefined}
+    onPointerMove={trackMotion ? event => move(event.currentTarget, 'pointer', event.pointerId, event.clientX, event.clientY) : undefined}
+    onPointerUp={event => finish(event.currentTarget, 'pointer', event.pointerId, event.clientX, event.clientY)}
+    onPointerCancel={cancelPointer} onLostPointerCapture={cancelPointer}
+    onTouchStart={touchSwipe ? beginTouch : undefined}
+    onTouchMove={touchSwipe ? event => {
+      const touch = event.changedTouches[0]
+      if (touch) move(event.currentTarget, 'touch', touch.identifier, touch.clientX, touch.clientY)
+    } : undefined}
+    onTouchEnd={touchSwipe ? event => {
+      const touch = event.changedTouches[0]
+      if (touch) finish(event.currentTarget, 'touch', touch.identifier, touch.clientX, touch.clientY)
+    } : undefined}
+    onTouchCancel={touchSwipe ? event => { if (start.current?.source === 'touch') cancel(event.currentTarget) } : undefined}
     onClickCapture={event => {
       if (!suppressClick.current || event.detail === 0) return
       event.preventDefault()

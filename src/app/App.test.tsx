@@ -30,6 +30,21 @@ afterEach(() => {
 })
 
 describe('YaHacks MVP', () => {
+  it('opens the calendar from a completed touch gesture and ignores a cancelled gesture', async () => {
+    renderApp()
+    const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
+    const start = { identifier: 1, clientX: 100, clientY: 180 }
+    const end = { ...start, clientY: 216 }
+    fireEvent.touchStart(home, { touches: [start], changedTouches: [start] })
+    fireEvent.touchMove(home, { touches: [end], changedTouches: [end] })
+    fireEvent.touchCancel(home, { touches: [], changedTouches: [end] })
+    expect(screen.getByTestId('pathname').textContent).toBe('/')
+    fireEvent.touchStart(home, { touches: [start], changedTouches: [start] })
+    fireEvent.touchMove(home, { touches: [end], changedTouches: [end] })
+    fireEvent.touchEnd(home, { touches: [], changedTouches: [end] })
+    expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
+  })
+
   it('opens an event, finds a team and returns to the event', async () => {
     renderApp()
     fireEvent.click(await screen.findByRole('button', { name: 'Календарь событий' }))
