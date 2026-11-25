@@ -30,27 +30,32 @@ afterEach(() => {
 })
 
 describe('YaHacks MVP', () => {
-  it('uses the classic home swipe threshold and ignores cancelled gestures', async () => {
+  it.each([
+    ['down with touch', 'touch', 72],
+    ['up with a mouse', 'mouse', -690],
+  ] as const)('opens the calendar via a swipe %s and ignores short or cancelled gestures', async (_, pointerType, distance) => {
     renderApp()
     const home = (await screen.findByRole('button', { name: 'Календарь событий' })).closest('.home')!
     Object.assign(home, { setPointerCapture: vi.fn() })
     const sendPointer = (type: string, clientY: number) => {
       const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: 100, clientY })
-      fireEvent(home, Object.assign(event, { isPrimary: true, pointerType: 'touch', pointerId: 1 }))
+      fireEvent(home, Object.assign(event, { isPrimary: true, pointerType, pointerId: 1 }))
     }
 
-    sendPointer('pointerdown', 180)
-    sendPointer('pointerup', 216)
+    const start = 740
+    const end = start + distance
+    sendPointer('pointerdown', start)
+    sendPointer('pointerup', start + Math.sign(distance) * 36)
     expect(screen.getByTestId('pathname').textContent).toBe('/')
 
-    sendPointer('pointerdown', 180)
-    sendPointer('pointermove', 252)
-    sendPointer('pointercancel', 252)
-    sendPointer('pointerup', 252)
+    sendPointer('pointerdown', start)
+    sendPointer('pointermove', end)
+    sendPointer('pointercancel', end)
+    sendPointer('pointerup', end)
     expect(screen.getByTestId('pathname').textContent).toBe('/')
 
-    sendPointer('pointerdown', 180)
-    sendPointer('pointerup', 252)
+    sendPointer('pointerdown', start)
+    sendPointer('pointerup', end)
     expect(await screen.findByRole('heading', { name: 'Календарь событий' })).toBeTruthy()
   })
 
